@@ -697,11 +697,14 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
 const SUPABASE_URL = "https://rzstvniejimjsurqbdpq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_3VN7PjB05na1PnyZxrLRHQ_VPEnIreP";
 
+
 const supabase = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
+
+  
 async function login(email,password){
 
   const { data, error } = await supabase.auth.signInWithPassword({
