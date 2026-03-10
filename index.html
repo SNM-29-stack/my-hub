@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -693,6 +694,39 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
 // ══════════════════════════════════════════
 // PIN
 // ══════════════════════════════════════════
+const SUPABASE_URL = "https://rzstvniejimjsurqbdpq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3VN7PjB05na1PnyZxrLRHQ_VPEnIreP";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+async function login(email,password){
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if(error){
+    alert(error.message);
+  }
+}
+
+async function signup(email,password){
+
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password
+  });
+
+  if(error){
+    alert(error.message);
+  }
+}
+
+  
 const PIN_KEY='myhub_pin_v2';
 let pb='',secOk=false;
 const getPin=()=>localStorage.getItem(PIN_KEY)||'1234';
@@ -765,19 +799,51 @@ document.getElementById('syncKeyInput').addEventListener('keydown',e=>{if(e.key=
 
 function syncKey(type){return `${userKey}:${type}`;}
 
-async function saveToCloud(type,data){
+async function saveToCloud(type, data){
   setSyncStatus('syncing');
-  try{
-    await window.storage.set(syncKey(type),JSON.stringify(data),false);
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+
+  if(!user){
+    setSyncStatus('error');
+    return;
+  }
+
+  const { error } = await supabase
+    .from(type)
+    .upsert({
+      user_id: user.id,
+      data: data
+    });
+
+  if(error){
+    console.error(error);
+    setSyncStatus('error');
+  } else {
     setSyncStatus('ok');
-  } catch(e){setSyncStatus('error');console.error('Save error',e);}
+  }
 }
 
 async function loadFromCloud(type){
-  try{
-    const r=await window.storage.get(syncKey(type),false);
-    return r?JSON.parse(r.value):null;
-  } catch(e){return null;}
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+
+  if(!user) return null;
+
+  const { data, error } = await supabase
+    .from(type)
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if(error){
+    console.error(error);
+    return null;
+  }
+
+  return data?.data || null;
 }
 
 async function loadAllFromCloud(){
