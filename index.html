@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Hub</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -21,42 +21,24 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;}
 
-/* ── LOCK ── */
-#lockScreen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease,transform .5s ease;}
-#lockScreen.unlocking{opacity:0;transform:scale(1.04);pointer-events:none;}
-.lock-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:20px;padding:52px 48px 44px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(30,26,20,.12);text-align:center;animation:fadeUp .5s ease both;}
-.lock-icon{font-size:44px;margin-bottom:20px;display:block;}
-.lock-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px;}
-.lock-title span{color:var(--accent);font-style:italic;}
-.lock-subtitle{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:32px;}
-.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px;}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent-soft);background:transparent;transition:all .2s;}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent);transform:scale(1.15);box-shadow:0 0 0 3px rgba(201,168,76,.18);}
-.pin-dot.error{background:var(--rust);border-color:var(--rust);animation:shake .35s ease;}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-.num-btn{height:58px;border:1px solid var(--accent-soft);border-radius:12px;background:var(--warm);font-family:'Lato',sans-serif;font-size:20px;color:var(--ink);cursor:pointer;transition:all .12s;}
-.num-btn:hover{background:var(--cream);border-color:var(--accent);transform:translateY(-1px);}
-.num-btn:active{transform:scale(.96);background:var(--accent-soft);}
-.num-btn.zero{grid-column:2;}.num-btn.del{grid-column:3;font-size:16px;color:var(--ink-light);}
-.lock-error{font-size:12px;color:var(--rust);font-weight:700;letter-spacing:.5px;min-height:18px;margin-top:4px;}
-
-/* ── SYNC KEY SCREEN ── */
-#syncScreen{position:fixed;inset:0;background:var(--cream);display:none;align-items:center;justify-content:center;z-index:9998;}
-#syncScreen.show{display:flex;}
-.sync-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:20px;padding:48px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(30,26,20,.12);animation:fadeUp .4s ease both;}
-.sync-card h2{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:var(--ink);margin-bottom:6px;}
-.sync-card h2 span{color:var(--accent);font-style:italic;}
-.sync-desc{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:28px;line-height:1.7;}
-.sync-input{width:100%;border:1.5px solid var(--accent-soft);border-radius:10px;background:var(--warm);padding:14px 16px;font-family:'Lato',sans-serif;font-size:15px;color:var(--ink);outline:none;transition:border-color .2s;margin-bottom:12px;letter-spacing:1px;}
-.sync-input:focus{border-color:var(--accent);}
-.sync-btn{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px;}
-.sync-btn:hover{background:var(--accent-hover);}
-.sync-btn:disabled{opacity:.6;cursor:not-allowed;}
-.sync-note{font-size:12px;color:var(--ink-faint);margin-top:16px;line-height:1.75;font-style:italic;}
-.sync-note strong{color:var(--ink);font-style:normal;}
-.sync-error{font-size:12px;color:var(--rust);font-weight:700;margin-top:8px;min-height:16px;}
-.sync-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sage);font-weight:700;margin-top:12px;opacity:0;transition:opacity .3s;}
-.sync-status.show{opacity:1;}
+/* ── AUTH SCREEN ── */
+#authScreen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:9999;}
+#authScreen.hidden{display:none;}
+.auth-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:20px;padding:52px 48px 44px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(30,26,20,.12);text-align:center;animation:fadeUp .5s ease both;}
+.auth-icon{font-size:44px;margin-bottom:20px;display:block;}
+.auth-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.auth-title span{color:var(--accent);font-style:italic;}
+.auth-subtitle{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:28px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;border:1px solid var(--accent-soft);border-radius:10px;overflow:hidden;}
+.auth-tab{flex:1;padding:10px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;border:none;background:transparent;color:var(--ink-faint);transition:all .2s;}
+.auth-tab.active{background:var(--accent);color:white;}
+.auth-input{width:100%;border:1.5px solid var(--accent-soft);border-radius:10px;background:var(--warm);padding:13px 16px;font-family:'Lato',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;margin-bottom:10px;display:block;box-sizing:border-box;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-btn{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px;margin-top:6px;}
+.auth-btn:hover{background:var(--accent-hover);}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;}
+.auth-error{font-size:12px;color:var(--rust);font-weight:700;margin-top:10px;min-height:16px;text-align:center;}
+.auth-note{font-size:12px;color:var(--ink-faint);margin-top:14px;line-height:1.75;font-style:italic;}
 
 /* ── MODALS ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,.45);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center;}
@@ -356,59 +338,33 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
 </head>
 <body>
 
-<!-- LOCK
-<div id="lockScreen">
-  <div class="lock-card">
-    <span class="lock-icon">🔐</span>
-    <div class="lock-title">My <span>Hub</span></div>
-    <div class="lock-subtitle">Enter your PIN to continue</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card">
+    <span class="auth-icon">✦</span>
+    <div class="auth-title">My <span>Hub</span></div>
+    <div class="auth-subtitle">Your private space for focus &amp; growth</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
     </div>
-    <div class="numpad">
-      <button class="num-btn" onclick="pi('1')">1</button><button class="num-btn" onclick="pi('2')">2</button><button class="num-btn" onclick="pi('3')">3</button>
-      <button class="num-btn" onclick="pi('4')">4</button><button class="num-btn" onclick="pi('5')">5</button><button class="num-btn" onclick="pi('6')">6</button>
-      <button class="num-btn" onclick="pi('7')">7</button><button class="num-btn" onclick="pi('8')">8</button><button class="num-btn" onclick="pi('9')">9</button>
-      <button class="num-btn zero" onclick="pi('0')">0</button><button class="num-btn del" onclick="pd()">⌫</button>
+    <div id="authLoginForm">
+      <input class="auth-input" type="email" id="loginEmail" placeholder="Email address" autocomplete="email">
+      <input class="auth-input" type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+      <button class="auth-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
     </div>
-    <div class="lock-error" id="lockErr"></div>
-  </div>
-</div> -->
-
-<!-- SYNC KEY SCREEN -->
-<div id="syncScreen">
-  <div class="sync-card">
-    <span style="font-size:36px;display:block;margin-bottom:16px;">☁️</span>
-    <h2>Your Sync <span>Key</span></h2>
-    <p class="sync-desc">This key is your identity across all devices. Use the same key everywhere to access your data. Keep it private — anyone with this key can access your hub.</p>
-    <input class="sync-input" type="text" id="syncKeyInput" placeholder="e.g. ahmed-hub-secret-2025" autocomplete="off" spellcheck="false">
-    <div class="sync-error" id="syncErr"></div>
-    <button class="sync-btn" id="syncBtn" onclick="enterWithKey()">Enter My Hub →</button>
-    <p class="sync-note"><strong>New here?</strong> Just type any key you'll remember — it creates your private space automatically.<br><br><strong>Returning?</strong> Type the same key you used before to restore all your data.</p>
-    <div class="sync-status" id="syncStatus">✓ Loading your data…</div>
+    <div id="authSignupForm" style="display:none">
+      <input class="auth-input" type="email" id="signupEmail" placeholder="Email address" autocomplete="email">
+      <input class="auth-input" type="password" id="signupPassword" placeholder="Password (min 6 chars)" autocomplete="new-password">
+      <input class="auth-input" type="password" id="signupConfirm" placeholder="Confirm password" autocomplete="new-password">
+      <button class="auth-btn" id="signupBtn" onclick="doSignup()">Create Account →</button>
+    </div>
+    <div class="auth-error" id="authErr"></div>
+    <p class="auth-note" id="authNote">Your data is private and synced securely to your account.</p>
   </div>
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="verifyModal">
-  <div class="modal-card">
-    <h3>🔒 Confirm PIN</h3>
-    <div class="modal-field"><label>Current PIN</label><input type="password" inputmode="numeric" maxlength="4" id="vIn" placeholder="••••"></div>
-    <div class="modal-error" id="vErr"></div>
-    <div class="modal-actions"><button class="modal-cancel" onclick="closeVerify()">Cancel</button><button class="modal-save" onclick="confirmVerify()">Confirm</button></div>
-  </div>
-</div>
-<div class="modal-overlay" id="changePinModal">
-  <div class="modal-card">
-    <h3>Change PIN</h3>
-    <div class="modal-field"><label>Current PIN</label><input type="password" inputmode="numeric" maxlength="4" id="cpCur" placeholder="••••"></div>
-    <div class="modal-field"><label>New PIN (4 digits)</label><input type="password" inputmode="numeric" maxlength="4" id="cpNew" placeholder="••••"></div>
-    <div class="modal-field"><label>Confirm New PIN</label><input type="password" inputmode="numeric" maxlength="4" id="cpCon" placeholder="••••"></div>
-    <div class="modal-error" id="cpErr"></div>
-    <div class="modal-actions"><button class="modal-cancel" onclick="document.getElementById('changePinModal').classList.remove('open')">Cancel</button><button class="modal-save" onclick="savePin()">Save</button></div>
-  </div>
-</div>
 <div class="modal-overlay" id="addDebtModal">
   <div class="modal-card">
     <h3>💳 Add Debt</h3>
@@ -438,10 +394,8 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
     <div class="sidebar-header">
       <div class="logo">My <span>Hub</span></div>
       <div class="sidebar-sub" id="sidebarDate"></div>
-      <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">Synced</span></div>
       <div class="sidebar-actions">
-     <!--   <button class="icon-btn" title="Sync now" onclick="forcSync()">↻</button> -->
-      <!--  <button class="icon-btn" title="Lock" onclick="lockApp()">🔒</button> -->
+        <button class="icon-btn" title="Sign out" onclick="doLogout()" style="font-size:13px;">⎋</button>
       </div>
     </div>
     <div class="nav-section">
@@ -450,7 +404,6 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
       <div class="nav-item" onclick="goTo('finance')" id="nav-finance"><div class="nav-dot" style="background:var(--finance)"></div><div><div class="nav-label">Finance</div><div class="nav-sub">Net Worth · Debts · Expenses</div></div></div>
       <div class="nav-item" onclick="goTo('yearplan')" id="nav-yearplan"><div class="nav-dot" style="background:var(--sage)"></div><div><div class="nav-label">Year Plan</div><div class="nav-sub">Schedules · Phases · Rules</div></div></div>
       <div class="nav-item" onclick="goTo('resources')" id="nav-resources"><div class="nav-dot" style="background:var(--gre-q)"></div><div><div class="nav-label">Resources</div><div class="nav-sub">GRE · English · Tools</div></div></div>
-      <div class="nav-item" onclick="goTo('security')" id="nav-security"><div class="nav-dot" style="background:var(--lavender)"></div><div><div class="nav-label">Security</div><div class="nav-sub">PIN · Sync Key</div></div></div>
     </div>
     <div id="journalSidebarExtra">
       <button class="new-entry-btn" onclick="newEntry()">✦ New Entry</button>
@@ -487,9 +440,6 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
         <div class="topbar-tab res-tab" id="rtab-notes" onclick="rTab('notes')">Notes System</div>
         <div class="topbar-tab res-tab" id="rtab-practice" onclick="rTab('practice')">Practice Methods</div>
         <div class="topbar-tab res-tab" id="rtab-stack" onclick="rTab('stack')">Full Stack</div>
-      </div>
-      <div class="topbar-section" id="tabs-security">
-        <div class="topbar-tab active">⚙️ Security Settings</div>
       </div>
     </div>
 
@@ -658,146 +608,96 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
       </div>
     </div>
 
-    <!-- SECURITY VIEW -->
-    <div class="view" id="view-security">
-      <div class="page-inner">
-        <div class="page-title">Security Settings</div>
-        <p class="page-sub">Manage your PIN, sync key, and access settings.</p>
-        <div class="security-card" style="margin-bottom:20px;">
-          <h3>🔑 Change PIN</h3>
-          <p style="font-size:13px;color:var(--ink-light);margin-bottom:16px;line-height:1.7;">Your hub is protected by a 4-digit PIN. Default is <strong>1234</strong>.</p>
-          <button class="save-btn" onclick="document.getElementById('changePinModal').classList.add('open')">Change PIN</button>
-          <div id="pinOkMsg" style="font-size:13px;color:var(--sage);font-weight:700;margin-top:12px;opacity:0;transition:opacity .4s;">✓ PIN changed successfully!</div>
-        </div>
-        <div class="security-card">
-          <h3>☁️ Sync Key</h3>
-          <p style="font-size:13px;color:var(--ink-light);margin-bottom:8px;line-height:1.7;">Your current sync key. Use this exact key on any device to access your data.</p>
-          <div style="background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-family:monospace;font-size:14px;color:var(--ink);letter-spacing:1px;margin-bottom:14px;" id="currentKeyDisplay">—</div>
-          <button class="save-btn" style="background:var(--ink);" onclick="showChangeSyncKey()">Change Sync Key</button>
-          <div id="changeSyncKeyForm" style="display:none;margin-top:16px;">
-            <input type="text" id="newSyncKey" placeholder="Enter new sync key" style="width:100%;border:1px solid var(--border);border-radius:7px;background:var(--warm);padding:10px 13px;font-family:'Lato',sans-serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:10px;">
-            <div style="display:flex;gap:8px;">
-              <button class="save-btn" onclick="changeSyncKey()">Save New Key</button>
-              <button class="modal-cancel" onclick="document.getElementById('changeSyncKeyForm').style.display='none'">Cancel</button>
-            </div>
-            <p style="font-size:11px;color:var(--rust);margin-top:8px;line-height:1.6;">⚠️ Changing your sync key will link to a new (empty) data space. Your old data will still be accessible by entering your old key on the sync screen.</p>
-          </div>
-        </div>
-      </div>
-    </div>
 
-  </div>
-</div>
-</div>
 
 <script>
 // ══════════════════════════════════════════
-// PIN
+// SUPABASE + AUTH
 // ══════════════════════════════════════════
 const SUPABASE_URL = "https://rzstvniejimjsurqbdpq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_3VN7PjB05na1PnyZxrLRHQ_VPEnIreP";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let currentUser = null;
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-
-  
-async function login(email,password){
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if(error){
-    alert(error.message);
-  }
+function switchAuthTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabSignup').classList.toggle('active', tab==='signup');
+  document.getElementById('authLoginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('authSignupForm').style.display = tab==='signup'?'block':'none';
+  document.getElementById('authErr').textContent='';
+  document.getElementById('authNote').textContent = tab==='login'
+    ? 'Your data is private and synced securely to your account.'
+    : 'Create a free account to save your data across devices.';
 }
 
-async function signup(email,password){
-
-  const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: password
-  });
-
-  if(error){
-    alert(error.message);
-  }
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const err=document.getElementById('authErr');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!password){err.textContent='Please enter your email and password.';return;}
+  btn.disabled=true;btn.textContent='Signing in…';err.textContent='';
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Sign In →';return;}
+  currentUser=data.user;
+  await enterApp();
 }
 
-
-function closeVerify(){document.getElementById('verifyModal').classList.remove('open');if(!secOk)goTo('journal');}
-function confirmVerify(){if(document.getElementById('vIn').value.trim()!==getPin()){document.getElementById('vErr').textContent='Incorrect PIN.';document.getElementById('vIn').value='';return;}secOk=true;document.getElementById('verifyModal').classList.remove('open');}
-function savePin(){const cur=document.getElementById('cpCur').value.trim(),nw=document.getElementById('cpNew').value.trim(),cf=document.getElementById('cpCon').value.trim(),err=document.getElementById('cpErr');if(cur!==getPin()){err.textContent='Current PIN is incorrect.';return;}if(!/^\d{4}$/.test(nw)){err.textContent='New PIN must be exactly 4 digits.';return;}if(nw!==cf){err.textContent='PINs do not match.';return;}localStorage.setItem(PIN_KEY,nw);document.getElementById('changePinModal').classList.remove('open');const m=document.getElementById('pinOkMsg');m.style.opacity='1';setTimeout(()=>m.style.opacity='0',2500);}
-
-// ══════════════════════════════════════════
-// SYNC KEY + CLOUD STORAGE
-// ══════════════════════════════════════════
-let userKey='';
-
-function showSyncScreen(){
-  // Check if we have a remembered key
-  const remembered=localStorage.getItem('myhub_synckey');
-  if(remembered){
-    document.getElementById('syncKeyInput').value=remembered;
+async function doSignup(){
+  const email=document.getElementById('signupEmail').value.trim();
+  const password=document.getElementById('signupPassword').value;
+  const confirm=document.getElementById('signupConfirm').value;
+  const err=document.getElementById('authErr');
+  const btn=document.getElementById('signupBtn');
+  if(!email||!password){err.textContent='Please fill in all fields.';return;}
+  if(password.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  if(password!==confirm){err.textContent='Passwords do not match.';return;}
+  btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
+  const {data,error}=await supabaseClient.auth.signUp({email,password});
+  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Create Account →';return;}
+  if(data.user&&!data.session){
+    err.style.color='var(--sage)';
+    err.textContent='✓ Check your email to confirm your account, then sign in.';
+    btn.disabled=false;btn.textContent='Create Account →';
+    switchAuthTab('login');return;
   }
-  document.getElementById('syncScreen').classList.add('show');
-  setTimeout(()=>document.getElementById('syncKeyInput').focus(),300);
+  currentUser=data.user;
+  await enterApp();
 }
 
-async function enterWithKey(){
-  const raw=document.getElementById('syncKeyInput').value.trim();
-  const err=document.getElementById('syncErr');
-  if(!raw||raw.length<4){err.textContent='Please enter a key of at least 4 characters.';return;}
-  if(/\s/.test(raw)){err.textContent='Key cannot contain spaces.';return;}
-  err.textContent='';
-  const btn=document.getElementById('syncBtn');
-  btn.disabled=true;btn.textContent='Loading…';
-  userKey=raw;
-  localStorage.setItem('myhub_synckey',raw);
-  const status=document.getElementById('syncStatus');
-  status.textContent='✓ Loading your data…';status.classList.add('show');
+async function doLogout(){
+  await supabaseClient.auth.signOut();
+  currentUser=null;entries=[];fin={expenses:[],debts:[],assets:[],liabilities:[]};
+  document.getElementById('app').style.display='none';
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPassword').value='';
+  document.getElementById('authErr').textContent='';
+  switchAuthTab('login');
+}
+
+async function enterApp(){
   await loadAllFromCloud();
-  document.getElementById('syncScreen').classList.remove('show');
+  document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('app').style.display='block';
-  btn.disabled=false;btn.textContent='Enter My Hub →';
-  status.classList.remove('show');
   initApp();
 }
 
-document.getElementById('syncKeyInput').addEventListener('keydown',e=>{if(e.key==='Enter')enterWithKey();});
-
-function syncKey(type){return `${userKey}:${type}`;}
-
+// ══════════════════════════════════════════
+// CLOUD STORAGE
+// ══════════════════════════════════════════
 async function saveToCloud(type, data){
-
-  const { error } = await supabase
-    .from(type)
-    .upsert({
-      id: userKey,
-      data: data
-    });
-
-  if(error){
-    console.error(error);
-  }
+  if(!currentUser)return;
+  const {error}=await supabaseClient.from(type).upsert({id:currentUser.id,data:data});
+  if(error)console.error('Save error:',error);
 }
 
 async function loadFromCloud(type){
-
-  const { data, error } = await supabase
-    .from(type)
-    .select("*")
-    .eq("id", userKey)
-    .single();
-
-  if(error) return null;
-
-  return data?.data || null;
+  if(!currentUser)return null;
+  const {data,error}=await supabaseClient.from(type).select('*').eq('id',currentUser.id).single();
+  if(error)return null;
+  return data?.data||null;
 }
 
 async function loadAllFromCloud(){
@@ -806,41 +706,12 @@ async function loadAllFromCloud(){
   if(f)fin=f;
 }
 
-function setSyncStatus(state){
-  const dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
-  dot.className='sync-dot';
-  if(state==='syncing'){dot.classList.add('syncing');lbl.textContent='Syncing…';}
-  else if(state==='error'){dot.classList.add('error');lbl.textContent='Sync error';}
-  else{lbl.textContent='Synced';}
-}
-
-async function forcSync(){
-  setSyncStatus('syncing');
-  await loadAllFromCloud();
-  renderJournalSidebar();
-  renderOverview();
-  setSyncStatus('ok');
-}
-
-function showChangeSyncKey(){document.getElementById('changeSyncKeyForm').style.display='block';document.getElementById('newSyncKey').focus();}
-function changeSyncKey(){
-  const nk=document.getElementById('newSyncKey').value.trim();
-  if(!nk||nk.length<4){alert('Key must be at least 4 characters.');return;}
-  if(/\s/.test(nk)){alert('Key cannot contain spaces.');return;}
-  userKey=nk;localStorage.setItem('myhub_synckey',nk);
-  document.getElementById('currentKeyDisplay').textContent=nk;
-  document.getElementById('changeSyncKeyForm').style.display='none';
-  document.getElementById('newSyncKey').value='';
-  alert('Sync key changed. You are now in a new data space.');
-}
-
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const SECTIONS=['journal','finance','yearplan','resources','security'];
+const SECTIONS=['journal','finance','yearplan','resources'];
 let curSection='journal';
 function goTo(sec){
-  if(sec==='security'&&!secOk){curSection='security';setSection('security');document.getElementById('verifyModal').classList.add('open');setTimeout(()=>document.getElementById('vIn').focus(),100);return;}
   curSection=sec;setSection(sec);
   if(sec==='journal')renderJournalSidebar();
   if(sec==='finance'){renderOverview();fTab('overview');}
@@ -864,7 +735,7 @@ function initApp(){
   document.getElementById('sidebarDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
   document.getElementById('fin-today-sub').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('expDate').value=todayISO();
-  document.getElementById('currentKeyDisplay').textContent=userKey;
+  
   renderJournalSidebar();newEntry();buildToday();buildYPContent();renderOverview();
 }
 
@@ -939,8 +810,12 @@ function yTab(t){['today','weekday','weekend','phases','rules','checkin'].forEac
 function ck(el){el.classList.toggle('checked');const box=el.querySelector('.check-box');box.style.background=el.classList.contains('checked')?'var(--sage)':'transparent';box.style.borderColor=el.classList.contains('checked')?'var(--sage)':'#aaa';box.style.color=el.classList.contains('checked')?'white':'transparent';updScore();}
 function updScore(){const items=document.querySelectorAll('#checklist .check-item');let chk=0;items.forEach(i=>{if(i.classList.contains('checked'))chk++;});const pct=Math.round(chk/items.length*100);const fill=document.getElementById('scoreBar');fill.style.width=pct+'%';fill.style.background=pct>=87?'var(--sage)':pct>=62?'var(--accent)':pct>=37?'var(--rust)':'#ccc';document.getElementById('scoreLabel').textContent=`${chk} of ${items.length} — ${pct}% this week`;const msg=document.getElementById('scoreMsg');msg.style.display='block';msg.style.padding='14px 18px';msg.style.borderRadius='8px';msg.style.fontSize='13px';msg.style.lineHeight='1.7';if(pct>=87){msg.innerHTML='🟢 <strong>Outstanding week.</strong> Sustained effort. Note what worked and repeat it.';msg.style.background='#e8f0e8';msg.style.borderLeft='4px solid var(--sage)';}else if(pct>=62){msg.innerHTML='🟡 <strong>Strong week.</strong> More than half your targets hit — genuinely impressive.';msg.style.background='#fef9e8';msg.style.borderLeft='4px solid var(--accent)';}else if(pct>=37){msg.innerHTML='🟠 <strong>OK week.</strong> Pick one thing to anchor next week and get back to it.';msg.style.background='#fef0e8';msg.style.borderLeft='4px solid var(--rust)';}else{msg.innerHTML='⚪ <strong>Hard week.</strong> The plan is still here. Even 15 minutes tomorrow.';msg.style.background='#f5f5f5';msg.style.borderLeft='4px solid #aaa';}}
 
-window.onload = () => {
-  showSyncScreen();
+window.onload = async () => {
+  const {data:{session}} = await supabaseClient.auth.getSession();
+  if(session){
+    currentUser = session.user;
+    await enterApp();
+  }
 };
   
 // ══════════════════════════════════════════
