@@ -729,28 +729,6 @@ async function signup(email,password){
   }
 }
 
-  
-const PIN_KEY='myhub_pin_v2';
-let pb='',secOk=false;
-const getPin=()=>localStorage.getItem(PIN_KEY)||'1234';
-function pi(d){if(pb.length>=4)return;pb+=d;dots();if(pb.length===4)setTimeout(chkPin,120);}
-function pd(){if(pb.length){pb=pb.slice(0,-1);dots();}}
-function dots(){for(let i=0;i<4;i++){const el=document.getElementById('d'+i);el.classList.remove('error');el.classList.toggle('filled',i<pb.length);}}
-function chkPin(){
-  if(pb===getPin()){
-    document.getElementById('lockScreen').classList.add('unlocking');
-    setTimeout(()=>{document.getElementById('lockScreen').style.display='none';showSyncScreen();},480);
-  } else {
-    document.getElementById('lockErr').textContent='Incorrect PIN.';
-    for(let i=0;i<4;i++)document.getElementById('d'+i).classList.add('error');
-    setTimeout(()=>{pb='';dots();document.getElementById('lockErr').textContent='';},600);
-  }
-}
-document.addEventListener('keydown',e=>{
-  if(document.getElementById('lockScreen').style.display==='none')return;
-  if(e.key>='0'&&e.key<='9')pi(e.key);
-  if(e.key==='Backspace')pd();
-});
 
 function closeVerify(){document.getElementById('verifyModal').classList.remove('open');if(!secOk)goTo('journal');}
 function confirmVerify(){if(document.getElementById('vIn').value.trim()!==getPin()){document.getElementById('vErr').textContent='Incorrect PIN.';document.getElementById('vIn').value='';return;}secOk=true;document.getElementById('verifyModal').classList.remove('open');}
