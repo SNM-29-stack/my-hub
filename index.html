@@ -440,8 +440,8 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-
       <div class="sidebar-sub" id="sidebarDate"></div>
       <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">Synced</span></div>
       <div class="sidebar-actions">
-        <button class="icon-btn" title="Sync now" onclick="forcSync()">↻</button>
-        <button class="icon-btn" title="Lock" onclick="lockApp()">🔒</button>
+     <!--   <button class="icon-btn" title="Sync now" onclick="forcSync()">↻</button> -->
+      <!--  <button class="icon-btn" title="Lock" onclick="lockApp()">🔒</button> -->
       </div>
     </div>
     <div class="nav-section">
@@ -748,14 +748,7 @@ document.addEventListener('keydown',e=>{
   if(e.key>='0'&&e.key<='9')pi(e.key);
   if(e.key==='Backspace')pd();
 });
-function lockApp(){
-  pb='';dots();document.getElementById('lockErr').textContent='';
-  secOk=false;userKey='';
-  document.getElementById('lockScreen').style.display='flex';
-  document.getElementById('lockScreen').classList.remove('unlocking');
-  document.getElementById('syncScreen').classList.remove('show');
-  document.getElementById('app').style.display='none';
-}
+
 function closeVerify(){document.getElementById('verifyModal').classList.remove('open');if(!secOk)goTo('journal');}
 function confirmVerify(){if(document.getElementById('vIn').value.trim()!==getPin()){document.getElementById('vErr').textContent='Incorrect PIN.';document.getElementById('vIn').value='';return;}secOk=true;document.getElementById('verifyModal').classList.remove('open');}
 function savePin(){const cur=document.getElementById('cpCur').value.trim(),nw=document.getElementById('cpNew').value.trim(),cf=document.getElementById('cpCon').value.trim(),err=document.getElementById('cpErr');if(cur!==getPin()){err.textContent='Current PIN is incorrect.';return;}if(!/^\d{4}$/.test(nw)){err.textContent='New PIN must be exactly 4 digits.';return;}if(nw!==cf){err.textContent='PINs do not match.';return;}localStorage.setItem(PIN_KEY,nw);document.getElementById('changePinModal').classList.remove('open');const m=document.getElementById('pinOkMsg');m.style.opacity='1';setTimeout(()=>m.style.opacity='0',2500);}
@@ -800,48 +793,28 @@ document.getElementById('syncKeyInput').addEventListener('keydown',e=>{if(e.key=
 function syncKey(type){return `${userKey}:${type}`;}
 
 async function saveToCloud(type, data){
-  setSyncStatus('syncing');
-
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-
-  if(!user){
-    setSyncStatus('error');
-    return;
-  }
 
   const { error } = await supabase
     .from(type)
     .upsert({
-      user_id: user.id,
+      id: userKey,
       data: data
     });
 
   if(error){
     console.error(error);
-    setSyncStatus('error');
-  } else {
-    setSyncStatus('ok');
   }
 }
 
 async function loadFromCloud(type){
 
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-
-  if(!user) return null;
-
   const { data, error } = await supabase
     .from(type)
     .select("*")
-    .eq("user_id", user.id)
+    .eq("id", userKey)
     .single();
 
-  if(error){
-    console.error(error);
-    return null;
-  }
+  if(error) return null;
 
   return data?.data || null;
 }
@@ -981,6 +954,10 @@ function yTab(t){['today','weekday','weekend','phases','rules','checkin'].forEac
 function ck(el){el.classList.toggle('checked');const box=el.querySelector('.check-box');box.style.background=el.classList.contains('checked')?'var(--sage)':'transparent';box.style.borderColor=el.classList.contains('checked')?'var(--sage)':'#aaa';box.style.color=el.classList.contains('checked')?'white':'transparent';updScore();}
 function updScore(){const items=document.querySelectorAll('#checklist .check-item');let chk=0;items.forEach(i=>{if(i.classList.contains('checked'))chk++;});const pct=Math.round(chk/items.length*100);const fill=document.getElementById('scoreBar');fill.style.width=pct+'%';fill.style.background=pct>=87?'var(--sage)':pct>=62?'var(--accent)':pct>=37?'var(--rust)':'#ccc';document.getElementById('scoreLabel').textContent=`${chk} of ${items.length} — ${pct}% this week`;const msg=document.getElementById('scoreMsg');msg.style.display='block';msg.style.padding='14px 18px';msg.style.borderRadius='8px';msg.style.fontSize='13px';msg.style.lineHeight='1.7';if(pct>=87){msg.innerHTML='🟢 <strong>Outstanding week.</strong> Sustained effort. Note what worked and repeat it.';msg.style.background='#e8f0e8';msg.style.borderLeft='4px solid var(--sage)';}else if(pct>=62){msg.innerHTML='🟡 <strong>Strong week.</strong> More than half your targets hit — genuinely impressive.';msg.style.background='#fef9e8';msg.style.borderLeft='4px solid var(--accent)';}else if(pct>=37){msg.innerHTML='🟠 <strong>OK week.</strong> Pick one thing to anchor next week and get back to it.';msg.style.background='#fef0e8';msg.style.borderLeft='4px solid var(--rust)';}else{msg.innerHTML='⚪ <strong>Hard week.</strong> The plan is still here. Even 15 minutes tomorrow.';msg.style.background='#f5f5f5';msg.style.borderLeft='4px solid #aaa';}}
 
+window.onload = () => {
+  showSyncScreen();
+};
+  
 // ══════════════════════════════════════════
 // RESOURCES
 // ══════════════════════════════════════════
