@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f5f0e8;--warm:#ede5d8;--paper:#fdfaf4;
+  --ink:#1e1a14;--ink-light:#6b5c45;--ink-faint:#b8a897;
+  --accent:#c9a84c;--accent-soft:#e8d8a8;--accent-hover:#a8893d;
+  --sage:#5a7a6a;--rust:#c94b35;--lavender:#7b6fa0;
+  --finance:#2d6a8f;--finance-soft:#d0e8f5;--finance-hover:#235577;
+  --shadow:rgba(30,26,20,.08);--shadow-md:rgba(30,26,20,.14);
+  --border:#ddd9d0;
+  --gre-q:#c9a84c;--gre-v:#7eb8d4;--gre-w:#a67ec8;
+  --eng-r:#6bbf8a;--eng-s:#d4a76b;--eng-l:#6babd4;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;}
+
+/* ── LOCK ── */
+#lockScreen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease,transform .5s ease;}
+#lockScreen.unlocking{opacity:0;transform:scale(1.04);pointer-events:none;}
+.lock-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:20px;padding:52px 48px 44px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(30,26,20,.12);text-align:center;animation:fadeUp .5s ease both;}
+.lock-icon{font-size:44px;margin-bottom:20px;display:block;}
+.lock-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.lock-title span{color:var(--accent);font-style:italic;}
+.lock-subtitle{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:32px;}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent-soft);background:transparent;transition:all .2s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);transform:scale(1.15);box-shadow:0 0 0 3px rgba(201,168,76,.18);}
+.pin-dot.error{background:var(--rust);border-color:var(--rust);animation:shake .35s ease;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.num-btn{height:58px;border:1px solid var(--accent-soft);border-radius:12px;background:var(--warm);font-family:'Lato',sans-serif;font-size:20px;color:var(--ink);cursor:pointer;transition:all .12s;}
+.num-btn:hover{background:var(--cream);border-color:var(--accent);transform:translateY(-1px);}
+.num-btn:active{transform:scale(.96);background:var(--accent-soft);}
+.num-btn.zero{grid-column:2;}.num-btn.del{grid-column:3;font-size:16px;color:var(--ink-light);}
+.lock-error{font-size:12px;color:var(--rust);font-weight:700;letter-spacing:.5px;min-height:18px;margin-top:4px;}
+
+/* ── SYNC KEY SCREEN ── */
+#syncScreen{position:fixed;inset:0;background:var(--cream);display:none;align-items:center;justify-content:center;z-index:9998;}
+#syncScreen.show{display:flex;}
+.sync-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:20px;padding:48px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(30,26,20,.12);animation:fadeUp .4s ease both;}
+.sync-card h2{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.sync-card h2 span{color:var(--accent);font-style:italic;}
+.sync-desc{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:28px;line-height:1.7;}
+.sync-input{width:100%;border:1.5px solid var(--accent-soft);border-radius:10px;background:var(--warm);padding:14px 16px;font-family:'Lato',sans-serif;font-size:15px;color:var(--ink);outline:none;transition:border-color .2s;margin-bottom:12px;letter-spacing:1px;}
+.sync-input:focus{border-color:var(--accent);}
+.sync-btn{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:10px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px;}
+.sync-btn:hover{background:var(--accent-hover);}
+.sync-btn:disabled{opacity:.6;cursor:not-allowed;}
+.sync-note{font-size:12px;color:var(--ink-faint);margin-top:16px;line-height:1.75;font-style:italic;}
+.sync-note strong{color:var(--ink);font-style:normal;}
+.sync-error{font-size:12px;color:var(--rust);font-weight:700;margin-top:8px;min-height:16px;}
+.sync-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sage);font-weight:700;margin-top:12px;opacity:0;transition:opacity .3s;}
+.sync-status.show{opacity:1;}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,.45);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-card{background:var(--paper);border:1px solid var(--accent-soft);border-radius:16px;padding:36px 40px;width:100%;max-width:420px;box-shadow:0 16px 48px rgba(30,26,20,.18);animation:fadeUp .3s ease both;max-height:90vh;overflow-y:auto;}
+.modal-card h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:20px;}
+.modal-field{margin-bottom:14px;}
+.modal-field label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:6px;}
+.modal-field input{width:100%;border:1px solid var(--accent-soft);border-radius:8px;background:var(--warm);padding:11px 14px;font-family:'Lato',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
+.modal-field input:focus{border-color:var(--accent);}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.modal-save{flex:1;padding:11px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.modal-save:hover{background:var(--accent-hover);}
+.modal-save.blue{background:var(--finance);}.modal-save.blue:hover{background:var(--finance-hover);}
+.modal-cancel{padding:11px 18px;background:transparent;color:var(--ink-light);border:1px solid var(--accent-soft);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.modal-cancel:hover{background:var(--warm);}
+.modal-error{font-size:12px;color:var(--rust);min-height:16px;margin-top:8px;font-weight:700;}
+
+/* ── SHELL ── */
+#app{display:none;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:240px;min-width:240px;background:var(--warm);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;box-shadow:2px 0 12px var(--shadow);}
+.sidebar-header{padding:24px 18px 16px;border-bottom:1px solid var(--border);position:relative;}
+.logo{font-family:'Playfair Display',serif;font-size:19px;font-weight:600;color:var(--ink);}
+.logo span{color:var(--accent);font-style:italic;}
+.sidebar-sub{font-size:11px;color:var(--ink-faint);margin-top:3px;letter-spacing:.5px;}
+.sidebar-actions{display:flex;gap:6px;position:absolute;top:20px;right:12px;}
+.icon-btn{width:26px;height:26px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-faint);transition:all .2s;}
+.icon-btn:hover{background:var(--accent-soft);color:var(--ink);}
+.sync-indicator{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-faint);margin-top:5px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+.sync-dot.syncing{background:var(--accent);animation:pulse 1s infinite;}
+.sync-dot.error{background:var(--rust);}
+.nav-section{padding:10px 10px 4px;}
+.nav-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink-faint);padding:0 6px 6px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:2px;}
+.nav-item:hover{background:rgba(201,168,76,.1);border-color:var(--accent-soft);}
+.nav-item.active{background:white;border-color:var(--accent-soft);box-shadow:0 2px 8px var(--shadow);}
+.nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.nav-label{font-size:12px;font-weight:700;}
+.nav-sub{font-size:10px;color:var(--ink-faint);}
+.sidebar-footer{margin-top:auto;padding:14px 12px;border-top:1px solid var(--border);}
+.sidebar-footer p{font-size:11px;color:var(--ink-faint);font-style:italic;text-align:center;}
+#journalSidebarExtra{display:flex;flex-direction:column;flex:1;overflow:hidden;border-top:1px solid var(--border);margin-top:6px;}
+.new-entry-btn{margin:10px;padding:9px 12px;background:var(--accent);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;box-shadow:0 2px 8px rgba(201,168,76,.3);}
+.new-entry-btn:hover{background:var(--accent-hover);transform:translateY(-1px);}
+.journal-entries-list{overflow-y:auto;padding:6px 10px;flex:1;}
+.entry-item{padding:9px 10px;border-radius:7px;cursor:pointer;transition:all .15s;margin-bottom:2px;border:1px solid transparent;}
+.entry-item:hover{background:rgba(201,168,76,.08);border-color:var(--accent-soft);}
+.entry-item.active{background:white;border-color:var(--accent-soft);box-shadow:0 2px 8px var(--shadow);}
+.entry-item-date{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+.entry-item-preview{font-size:10px;color:var(--ink-light);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-style:italic;}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.topbar{background:var(--paper);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;min-height:50px;position:sticky;top:0;z-index:50;overflow-x:auto;}
+.topbar-section{display:none;}
+.topbar-section.active{display:flex;align-items:center;width:100%;gap:0;}
+.topbar-tab{padding:13px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink-faint);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;white-space:nowrap;}
+.topbar-tab:hover{color:var(--ink);}
+.topbar-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.topbar-tab.finance-tab.active{color:var(--finance);border-bottom-color:var(--finance);}
+.topbar-tab.res-tab.active{color:var(--gre-q);border-bottom-color:var(--gre-q);}
+.topbar-tab.yp-tab.active{color:var(--sage);border-bottom-color:var(--sage);}
+.view{display:none;flex:1;overflow-y:auto;}
+.view.active{display:block;}
+.page-inner{padding:36px 48px;max-width:960px;margin:0 auto;}
+.page-title{font-family:'Playfair Display',serif;font-size:30px;font-weight:400;color:var(--ink);margin-bottom:6px;}
+.page-sub{font-size:13px;color:var(--ink-faint);font-style:italic;margin-bottom:28px;}
+.callout{border-left:3px solid var(--accent);padding:12px 16px;background:#fdf8f0;margin:14px 0;font-size:13px;color:var(--ink);line-height:1.75;}
+.callout strong{color:var(--accent);}
+.callout.sage{border-left-color:var(--sage);background:#f0f7f3;}.callout.sage strong{color:var(--sage);}
+.callout.blue{border-left-color:var(--finance);background:#edf5fb;}.callout.blue strong{color:var(--finance);}
+.callout.lavender{border-left-color:var(--lavender);background:#f3f0f9;}.callout.lavender strong{color:var(--lavender);}
+
+/* ── JOURNAL ── */
+.journal-shell{display:flex;height:100%;min-height:calc(100vh - 50px);}
+.journal-main{flex:1;overflow-y:auto;}
+.journal-inner{padding:36px 48px;max-width:760px;}
+.title-input{width:100%;border:none;outline:none;background:transparent;font-family:'Playfair Display',serif;font-size:19px;font-weight:600;color:var(--ink);padding:9px 0 7px;border-bottom:1px solid var(--accent-soft);margin-bottom:18px;transition:border-color .2s;}
+.title-input::placeholder{color:var(--ink-faint);font-style:italic;font-weight:400;}
+.title-input:focus{border-bottom-color:var(--accent);}
+.body-input{width:100%;border:none;outline:none;background:transparent;font-family:'Lato',sans-serif;font-size:15px;line-height:1.85;color:var(--ink);resize:none;min-height:300px;font-weight:300;}
+.body-input::placeholder{color:var(--ink-faint);font-style:italic;}
+.paper-lines{background-image:repeating-linear-gradient(transparent,transparent 29px,rgba(184,168,151,.2) 29px,rgba(184,168,151,.2) 30px);background-attachment:local;padding:4px 0;}
+.mood-picker{display:flex;gap:7px;margin-bottom:14px;}
+.mood-btn{width:32px;height:32px;border:2px solid transparent;border-radius:50%;background:var(--warm);font-size:16px;cursor:pointer;transition:all .15s;}
+.mood-btn:hover{transform:scale(1.2);}
+.mood-btn.selected{border-color:var(--accent);background:white;box-shadow:0 2px 8px var(--shadow-md);}
+.entry-actions{display:flex;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border);align-items:center;}
+.save-btn{padding:9px 22px;background:var(--accent);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .2s;}
+.save-btn:hover{background:var(--accent-hover);}
+.delete-btn{padding:9px 16px;background:transparent;color:var(--rust);border:1px solid rgba(201,75,53,.3);border-radius:7px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.word-count{margin-left:auto;font-size:12px;color:var(--ink-faint);font-style:italic;}
+.save-feedback{font-size:12px;color:var(--sage);font-weight:700;opacity:0;transition:opacity .3s;}
+.save-feedback.show{opacity:1;}
+.read-entry-date{font-family:'Playfair Display',serif;font-size:24px;color:var(--ink);}
+.read-entry-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--ink);margin-top:9px;}
+.read-entry-body{font-size:15px;line-height:1.85;color:var(--ink);font-weight:300;white-space:pre-wrap;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 20px;box-shadow:0 2px 8px var(--shadow);}
+.stat-number{font-family:'Playfair Display',serif;font-size:32px;font-weight:600;color:var(--accent);}
+.stat-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+.mood-chart{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:18px;}
+.mood-chart h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--ink);margin-bottom:16px;font-weight:400;}
+.mood-bars{display:flex;flex-direction:column;gap:9px;}
+.mood-bar-row{display:flex;align-items:center;gap:9px;}
+.mood-bar-track{flex:1;height:8px;background:var(--warm);border-radius:4px;overflow:hidden;}
+.mood-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#e8c070);border-radius:4px;transition:width .8s cubic-bezier(.16,1,.3,1);}
+.streak-card{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hover) 100%);border-radius:10px;padding:20px;margin-bottom:18px;color:white;box-shadow:0 4px 16px rgba(201,168,76,.3);}
+.streak-card h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:400;opacity:.9;margin-bottom:5px;}
+.streak-number{font-family:'Playfair Display',serif;font-size:44px;font-weight:600;}
+.ai-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:18px;}
+.ai-card h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--ink);margin-bottom:12px;font-weight:400;}
+.analyze-btn{padding:9px 20px;background:var(--sage);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.analyze-btn:hover{background:#4a6a5a;}
+.analyze-btn:disabled{opacity:.6;cursor:not-allowed;}
+.ai-result{margin-top:12px;font-size:14px;line-height:1.75;color:var(--ink);font-weight:300;white-space:pre-wrap;}
+
+/* ── FINANCE ── */
+.fin-grid-top{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.fin-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px var(--shadow);position:relative;overflow:hidden;}
+.fin-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;}
+.fin-card.green::before{background:var(--sage);}
+.fin-card.blue::before{background:var(--finance);}
+.fin-card.red::before{background:var(--rust);}
+.fin-card.gold::before{background:var(--accent);}
+.fin-card-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;}
+.fin-card-value{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;line-height:1.1;}
+.fin-card-value.positive{color:var(--sage);}
+.fin-card-value.negative{color:var(--rust);}
+.fin-card-value.neutral{color:var(--finance);}
+.fin-card-sub{font-size:11px;color:var(--ink-faint);margin-top:3px;}
+.fin-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.fin-chart-card{background:white;border:1px solid var(--border);border-radius:10px;padding:18px;}
+.fin-chart-card h3{font-family:'Playfair Display',serif;font-size:15px;font-weight:400;color:var(--ink);margin-bottom:12px;}
+.cat-bar-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.cat-bar-label{font-size:11px;color:var(--ink);width:86px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cat-bar-track{flex:1;height:7px;background:var(--warm);border-radius:3px;overflow:hidden;}
+.cat-bar-fill{height:100%;border-radius:3px;}
+.cat-bar-val{font-size:11px;color:var(--ink-faint);width:56px;text-align:right;}
+.debt-banner{background:linear-gradient(135deg,var(--finance) 0%,#1a4a6a 100%);border-radius:10px;padding:18px 22px;margin-bottom:18px;color:white;display:flex;align-items:center;gap:18px;box-shadow:0 4px 16px rgba(45,106,143,.3);}
+.debt-banner-icon{font-size:28px;flex-shrink:0;}
+.debt-banner-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:3px;}
+.debt-banner-amount{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;}
+.debt-banner-sub{font-size:12px;opacity:.75;margin-top:2px;}
+.debt-banner-btn{margin-left:auto;padding:7px 14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;font-family:'Lato',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.debt-table{width:100%;border-collapse:collapse;background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.debt-table th{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);padding:10px 14px;background:var(--warm);border-bottom:1px solid var(--border);text-align:left;}
+.debt-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f0ede8;vertical-align:middle;}
+.debt-table tr:last-child td{border-bottom:none;}
+.debt-table tr:hover td{background:#fdfaf4;}
+.debt-progress{height:5px;background:#eee;border-radius:3px;width:100px;overflow:hidden;display:inline-block;}
+.debt-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--rust),#e88070);}
+.debt-progress-fill.good{background:linear-gradient(90deg,var(--sage),#7aaa8a);}
+.del-row-btn{padding:3px 7px;font-size:10px;color:var(--rust);border:1px solid rgba(201,75,53,.25);background:transparent;border-radius:4px;cursor:pointer;}
+.exp-layout{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start;}
+.exp-form{background:white;border:1px solid var(--border);border-radius:10px;padding:20px;}
+.exp-form h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:400;margin-bottom:16px;color:var(--ink);}
+.fin-input{width:100%;border:1px solid var(--border);border-radius:7px;background:var(--warm);padding:9px 12px;font-family:'Lato',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;margin-bottom:10px;}
+.fin-input:focus{border-color:var(--finance);}
+.fin-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px;display:block;}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px;}
+.cat-btn{padding:5px 3px;border:1px solid var(--border);border-radius:5px;font-size:10px;font-weight:700;background:var(--warm);cursor:pointer;transition:all .15px;text-align:center;}
+.cat-btn.sel{color:white;border-color:transparent;}
+.cat-btn[data-cat="Food"].sel{background:#e8774a;}
+.cat-btn[data-cat="Transport"].sel{background:var(--finance);}
+.cat-btn[data-cat="Health"].sel{background:var(--sage);}
+.cat-btn[data-cat="Shopping"].sel{background:var(--lavender);}
+.cat-btn[data-cat="Entertainment"].sel{background:var(--rust);}
+.cat-btn[data-cat="Bills"].sel{background:#888;}
+.cat-btn[data-cat="Savings"].sel{background:var(--accent);}
+.cat-btn[data-cat="Debt"].sel{background:#c94b35;}
+.cat-btn[data-cat="Other"].sel{background:#a0a0a0;}
+.add-exp-btn{width:100%;padding:10px;background:var(--finance);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.add-exp-btn:hover{background:var(--finance-hover);}
+.exp-list{background:white;border:1px solid var(--border);border-radius:10px;padding:16px;max-height:400px;overflow-y:auto;}
+.exp-list h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:400;margin-bottom:12px;color:var(--ink);}
+.exp-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0ede8;}
+.exp-item:last-child{border-bottom:none;}
+.exp-cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.exp-desc{flex:1;font-size:13px;color:var(--ink);}
+.exp-desc-sub{font-size:10px;color:var(--ink-faint);}
+.exp-amount{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--rust);}
+.exp-del{padding:3px 6px;font-size:10px;color:var(--ink-faint);border:1px solid var(--border);background:transparent;border-radius:4px;cursor:pointer;}
+.insight-item{display:flex;gap:11px;padding:10px 0;border-bottom:1px dashed var(--border);align-items:flex-start;}
+.insight-item:last-child{border-bottom:none;}
+.insight-icon{font-size:18px;flex-shrink:0;}
+.insight-text{font-size:13px;color:var(--ink);line-height:1.65;}
+.insight-text strong{color:var(--ink);}
+.ai-fin-btn{padding:9px 20px;background:var(--finance);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;margin-top:9px;}
+.ai-fin-btn:hover{background:var(--finance-hover);}
+.ai-fin-btn:disabled{opacity:.6;cursor:not-allowed;}
+.nw-section{margin-bottom:24px;}
+.nw-section h3{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;color:var(--ink);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+.nw-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f5f2ed;}
+.nw-row:last-of-type{border-bottom:none;}
+.nw-name{flex:1;font-size:13px;color:var(--ink);}
+.nw-val{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;}
+.nw-val.pos{color:var(--sage);}
+.nw-val.neg{color:var(--rust);}
+.nw-del{padding:3px 6px;font-size:10px;color:var(--ink-faint);border:1px solid var(--border);background:transparent;border-radius:4px;cursor:pointer;}
+.nw-add-btn{padding:7px 14px;border:1px dashed var(--border);background:transparent;color:var(--ink-faint);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:7px;transition:all .2s;margin-top:7px;}
+.nw-add-btn:hover{border-color:var(--finance);color:var(--finance);}
+.nw-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-radius:8px;margin-top:7px;}
+.nw-total-row.assets{background:#edf7f1;}.nw-total-row.liabilities{background:#fdf0ee;}
+.security-card{background:white;border:1px solid var(--border);border-radius:10px;padding:24px;max-width:480px;}
+.security-card h3{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;margin-bottom:16px;}
+
+/* ── RESOURCE HUB ── */
+.res-section{margin-bottom:36px;}
+.res-section-label{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.res-section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.resource-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.res-card{background:white;border:1px solid var(--border);border-radius:10px;padding:18px;transition:border-color .2s,transform .2s;position:relative;overflow:hidden;}
+.res-card:hover{border-color:#999;transform:translateY(-2px);box-shadow:0 4px 16px var(--shadow-md);}
+.res-priority{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:10px 0 0 10px;}
+.p-must{background:var(--accent);}
+.p-high{background:var(--gre-v);}
+.p-nice{background:var(--border);}
+.res-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;}
+.res-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;line-height:1.3;padding-left:8px;}
+.res-tag{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 7px;border-radius:4px;white-space:nowrap;font-weight:700;flex-shrink:0;margin-left:7px;}
+.tag-free{background:#1a3a1a;color:#6bbf8a;}.tag-paid{background:#3a1a1a;color:#d46b6b;}
+.tag-freemium{background:#2a2a1a;color:#d4c46b;}.tag-app{background:#1a1a3a;color:#7eb8d4;}
+.tag-book{background:#2a1a3a;color:#a67ec8;}
+.res-desc{font-size:12px;color:var(--ink-faint);line-height:1.65;margin-bottom:8px;padding-left:8px;}
+.res-use{font-size:11px;color:var(--ink);opacity:.7;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;font-style:italic;}
+.res-url{display:inline-block;margin-top:7px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);text-decoration:none;opacity:.8;padding-left:8px;}
+.res-url:hover{opacity:1;}
+
+/* ── YEAR PLAN ── */
+.yp-day-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.yp-day-card{background:white;border:1.5px solid var(--ink);border-radius:10px;padding:22px;position:relative;transition:transform .2s,box-shadow .2s;}
+.yp-day-card:hover{transform:translateY(-2px);box-shadow:5px 5px 0 var(--ink);}
+.yp-day-label{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:3px;}
+.yp-day-type{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:white;padding:3px 9px;display:inline-block;margin-bottom:14px;border-radius:3px;}
+.yp-day-card.workday .yp-day-type{background:var(--sage);}
+.yp-day-card.light-day .yp-day-type{background:var(--lavender);}
+.yp-day-card.weekend-day .yp-day-type{background:var(--rust);}
+.yp-day-card.flex-day .yp-day-type{background:#bbb;}
+.time-block{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;}
+.time-label{font-size:10px;color:#999;font-weight:500;min-width:52px;padding-top:3px;}
+.block-pill{font-size:12px;padding:4px 10px;font-weight:400;line-height:1.4;border-radius:3px;}
+.block-gre{background:#fde8c8;border-left:3px solid var(--accent);}
+.block-english{background:#e8f0e8;border-left:3px solid var(--sage);}
+.block-work{background:#e8eaf0;border-left:3px solid var(--lavender);}
+.block-rest{background:#fae8e8;border-left:3px solid var(--rust);}
+.block-flex{background:#f0ece8;border-left:3px solid #aaa;}
+.yp-rule-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:20px;}
+.yp-rule-card{padding:20px;border:1.5px solid currentColor;border-radius:10px;position:relative;}
+.yp-rule-card.gold{border-color:var(--accent);}
+.yp-rule-card.sage{border-color:var(--sage);}
+.yp-rule-card.rust{border-color:var(--rust);}
+.yp-rule-card.lavender{border-color:var(--lavender);}
+.yp-rule-num{font-family:'Playfair Display',serif;font-size:44px;font-weight:900;line-height:1;opacity:.1;position:absolute;top:8px;right:12px;}
+.yp-rule-title{font-weight:700;font-size:13px;margin-bottom:7px;}
+.yp-rule-body{font-size:12px;color:var(--ink-faint);line-height:1.7;}
+.phases-list{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;}
+.phase{display:grid;grid-template-columns:130px 1fr;border-bottom:1.5px solid var(--ink);}
+.phase:last-child{border-bottom:none;}
+.phase-meta{padding:20px;border-right:1.5px solid var(--ink);background:var(--ink);color:var(--cream);}
+.phase-period{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.6;margin-bottom:6px;}
+.phase-name{font-family:'Playfair Display',serif;font-size:17px;line-height:1.2;}
+.phase-body{padding:20px;}
+.phase-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.ptag{font-size:10px;padding:3px 10px;border:1px solid currentColor;font-weight:700;border-radius:3px;}
+.ptag.gre{color:var(--accent);}.ptag.eng{color:var(--sage);}.ptag.wk{color:var(--lavender);}
+.phase-desc{font-size:12px;color:var(--ink-faint);line-height:1.75;}
+.checklist-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.check-item{display:flex;align-items:center;gap:11px;padding:13px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none;}
+.check-item:hover{border-color:var(--ink);}
+.check-item.checked{border-color:var(--sage);background:#e8f0e8;}
+.check-box{width:18px;height:18px;border:2px solid #aaa;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;border-radius:3px;}
+.check-item.checked .check-box{background:var(--sage);border-color:var(--sage);color:white;}
+.check-text{font-size:12px;}
+.score-bar-wrap{height:5px;background:#e8e8e8;margin-top:20px;border-radius:3px;overflow:hidden;}
+.score-fill{height:100%;background:var(--sage);transition:width .4s ease;}
+.score-label{font-size:12px;color:var(--ink-faint);margin-top:7px;}
+.score-msg{margin-top:14px;padding:14px 18px;font-size:13px;line-height:1.7;border-radius:8px;display:none;}
+.today-banner{background:var(--ink);color:var(--cream);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.today-banner-top{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.today-day{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;}
+.today-badge{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border:1px solid rgba(255,255,255,.3);border-radius:3px;}
+.today-blocks{padding:16px 24px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+
+/* ── MISC ── */
+.spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
+.spinner.dark{border-color:rgba(30,26,20,.2);border-top-color:var(--ink);}
+.empty-state{text-align:center;padding:48px 36px;color:var(--ink-faint);}
+.empty-state .big-icon{font-size:44px;margin-bottom:12px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lockScreen">
+  <div class="lock-card">
+    <span class="lock-icon">🔐</span>
+    <div class="lock-title">My <span>Hub</span></div>
+    <div class="lock-subtitle">Enter your PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="numpad">
+      <button class="num-btn" onclick="pi('1')">1</button><button class="num-btn" onclick="pi('2')">2</button><button class="num-btn" onclick="pi('3')">3</button>
+      <button class="num-btn" onclick="pi('4')">4</button><button class="num-btn" onclick="pi('5')">5</button><button class="num-btn" onclick="pi('6')">6</button>
+      <button class="num-btn" onclick="pi('7')">7</button><button class="num-btn" onclick="pi('8')">8</button><button class="num-btn" onclick="pi('9')">9</button>
+      <button class="num-btn zero" onclick="pi('0')">0</button><button class="num-btn del" onclick="pd()">⌫</button>
+    </div>
+    <div class="lock-error" id="lockErr"></div>
+  </div>
+</div>
+
+<!-- SYNC KEY SCREEN -->
+<div id="syncScreen">
+  <div class="sync-card">
+    <span style="font-size:36px;display:block;margin-bottom:16px;">☁️</span>
+    <h2>Your Sync <span>Key</span></h2>
+    <p class="sync-desc">This key is your identity across all devices. Use the same key everywhere to access your data. Keep it private — anyone with this key can access your hub.</p>
+    <input class="sync-input" type="text" id="syncKeyInput" placeholder="e.g. ahmed-hub-secret-2025" autocomplete="off" spellcheck="false">
+    <div class="sync-error" id="syncErr"></div>
+    <button class="sync-btn" id="syncBtn" onclick="enterWithKey()">Enter My Hub →</button>
+    <p class="sync-note"><strong>New here?</strong> Just type any key you'll remember — it creates your private space automatically.<br><br><strong>Returning?</strong> Type the same key you used before to restore all your data.</p>
+    <div class="sync-status" id="syncStatus">✓ Loading your data…</div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal-card">
+    <h3>🔒 Confirm PIN</h3>
+    <div class="modal-field"><label>Current PIN</label><input type="password" inputmode="numeric" maxlength="4" id="vIn" placeholder="••••"></div>
+    <div class="modal-error" id="vErr"></div>
+    <div class="modal-actions"><button class="modal-cancel" onclick="closeVerify()">Cancel</button><button class="modal-save" onclick="confirmVerify()">Confirm</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="changePinModal">
+  <div class="modal-card">
+    <h3>Change PIN</h3>
+    <div class="modal-field"><label>Current PIN</label><input type="password" inputmode="numeric" maxlength="4" id="cpCur" placeholder="••••"></div>
+    <div class="modal-field"><label>New PIN (4 digits)</label><input type="password" inputmode="numeric" maxlength="4" id="cpNew" placeholder="••••"></div>
+    <div class="modal-field"><label>Confirm New PIN</label><input type="password" inputmode="numeric" maxlength="4" id="cpCon" placeholder="••••"></div>
+    <div class="modal-error" id="cpErr"></div>
+    <div class="modal-actions"><button class="modal-cancel" onclick="document.getElementById('changePinModal').classList.remove('open')">Cancel</button><button class="modal-save" onclick="savePin()">Save</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="addDebtModal">
+  <div class="modal-card">
+    <h3>💳 Add Debt</h3>
+    <div class="modal-field"><label>Debt Name</label><input type="text" id="dName" placeholder="e.g. Car Loan"></div>
+    <div class="modal-field"><label>Total Original Amount (SAR)</label><input type="number" id="dTotal"></div>
+    <div class="modal-field"><label>Remaining Balance (SAR)</label><input type="number" id="dRemain"></div>
+    <div class="modal-field"><label>Monthly Payment (SAR)</label><input type="number" id="dMonthly"></div>
+    <div class="modal-field"><label>Interest Rate % (optional)</label><input type="number" id="dRate"></div>
+    <div class="modal-error" id="dErr"></div>
+    <div class="modal-actions"><button class="modal-cancel" onclick="document.getElementById('addDebtModal').classList.remove('open')">Cancel</button><button class="modal-save blue" onclick="saveDebt()">Add Debt</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="addNWModal">
+  <div class="modal-card">
+    <h3 id="nwModalTitle">Add Asset</h3>
+    <div class="modal-field"><label>Name</label><input type="text" id="nwName"></div>
+    <div class="modal-field"><label>Value (SAR)</label><input type="number" id="nwVal"></div>
+    <div class="modal-error" id="nwErr"></div>
+    <div class="modal-actions"><button class="modal-cancel" onclick="document.getElementById('addNWModal').classList.remove('open')">Cancel</button><button class="modal-save blue" id="nwSaveBtn" onclick="saveNWItem()">Add</button></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">My <span>Hub</span></div>
+      <div class="sidebar-sub" id="sidebarDate"></div>
+      <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">Synced</span></div>
+      <div class="sidebar-actions">
+        <button class="icon-btn" title="Sync now" onclick="forcSync()">↻</button>
+        <button class="icon-btn" title="Lock" onclick="lockApp()">🔒</button>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Sections</div>
+      <div class="nav-item active" onclick="goTo('journal')" id="nav-journal"><div class="nav-dot" style="background:var(--accent)"></div><div><div class="nav-label">Journal</div><div class="nav-sub">Write · Read · Reflect</div></div></div>
+      <div class="nav-item" onclick="goTo('finance')" id="nav-finance"><div class="nav-dot" style="background:var(--finance)"></div><div><div class="nav-label">Finance</div><div class="nav-sub">Net Worth · Debts · Expenses</div></div></div>
+      <div class="nav-item" onclick="goTo('yearplan')" id="nav-yearplan"><div class="nav-dot" style="background:var(--sage)"></div><div><div class="nav-label">Year Plan</div><div class="nav-sub">Schedules · Phases · Rules</div></div></div>
+      <div class="nav-item" onclick="goTo('resources')" id="nav-resources"><div class="nav-dot" style="background:var(--gre-q)"></div><div><div class="nav-label">Resources</div><div class="nav-sub">GRE · English · Tools</div></div></div>
+      <div class="nav-item" onclick="goTo('security')" id="nav-security"><div class="nav-dot" style="background:var(--lavender)"></div><div><div class="nav-label">Security</div><div class="nav-sub">PIN · Sync Key</div></div></div>
+    </div>
+    <div id="journalSidebarExtra">
+      <button class="new-entry-btn" onclick="newEntry()">✦ New Entry</button>
+      <div class="journal-entries-list" id="entriesList"></div>
+    </div>
+    <div class="sidebar-footer"><p>Built for focus &amp; consistency ✦</p></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-section active" id="tabs-journal">
+        <div class="topbar-tab active" id="jtab-write" onclick="jTab('write')">✏️ Write</div>
+        <div class="topbar-tab" id="jtab-read" onclick="jTab('read')">📖 Read</div>
+        <div class="topbar-tab" id="jtab-insights" onclick="jTab('insights')">✨ Insights</div>
+      </div>
+      <div class="topbar-section" id="tabs-finance">
+        <div class="topbar-tab finance-tab active" id="ftab-overview" onclick="fTab('overview')">📊 Overview</div>
+        <div class="topbar-tab finance-tab" id="ftab-expenses" onclick="fTab('expenses')">💸 Expenses</div>
+        <div class="topbar-tab finance-tab" id="ftab-debts" onclick="fTab('debts')">💳 Debts</div>
+        <div class="topbar-tab finance-tab" id="ftab-networth" onclick="fTab('networth')">🏦 Net Worth</div>
+        <div class="topbar-tab finance-tab" id="ftab-insights" onclick="fTab('insights')">🤖 AI Insights</div>
+      </div>
+      <div class="topbar-section" id="tabs-yearplan">
+        <div class="topbar-tab yp-tab active" id="ytab-today" onclick="yTab('today')">Today</div>
+        <div class="topbar-tab yp-tab" id="ytab-weekday" onclick="yTab('weekday')">Weekdays</div>
+        <div class="topbar-tab yp-tab" id="ytab-weekend" onclick="yTab('weekend')">Weekend</div>
+        <div class="topbar-tab yp-tab" id="ytab-phases" onclick="yTab('phases')">Year Phases</div>
+        <div class="topbar-tab yp-tab" id="ytab-rules" onclick="yTab('rules')">Fluid Rules</div>
+        <div class="topbar-tab yp-tab" id="ytab-checkin" onclick="yTab('checkin')">Check-in</div>
+      </div>
+      <div class="topbar-section" id="tabs-resources">
+        <div class="topbar-tab res-tab active" id="rtab-gre" onclick="rTab('gre')">GRE Prep</div>
+        <div class="topbar-tab res-tab" id="rtab-english" onclick="rTab('english')">English Test</div>
+        <div class="topbar-tab res-tab" id="rtab-notes" onclick="rTab('notes')">Notes System</div>
+        <div class="topbar-tab res-tab" id="rtab-practice" onclick="rTab('practice')">Practice Methods</div>
+        <div class="topbar-tab res-tab" id="rtab-stack" onclick="rTab('stack')">Full Stack</div>
+      </div>
+      <div class="topbar-section" id="tabs-security">
+        <div class="topbar-tab active">⚙️ Security Settings</div>
+      </div>
+    </div>
+
+    <!-- JOURNAL VIEW -->
+    <div class="view active" id="view-journal">
+      <div class="journal-shell">
+        <div class="journal-main" id="jview-write">
+          <div class="journal-inner">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;flex-wrap:wrap;gap:10px;">
+              <div class="page-title" id="entryFullDate" style="margin-bottom:0;font-size:22px;"></div>
+              <div class="mood-picker">
+                <button class="mood-btn" data-mood="😊" onclick="selectMood(this)">😊</button>
+                <button class="mood-btn" data-mood="😌" onclick="selectMood(this)">😌</button>
+                <button class="mood-btn" data-mood="😔" onclick="selectMood(this)">😔</button>
+                <button class="mood-btn" data-mood="😤" onclick="selectMood(this)">😤</button>
+                <button class="mood-btn" data-mood="🤩" onclick="selectMood(this)">🤩</button>
+                <button class="mood-btn" data-mood="😰" onclick="selectMood(this)">😰</button>
+              </div>
+            </div>
+            <input class="title-input" id="entryTitle" placeholder="What's today about?" maxlength="100">
+            <textarea class="body-input paper-lines" id="entryBody" placeholder="Start writing your thoughts…" oninput="updateWC()"></textarea>
+            <div class="entry-actions">
+              <button class="save-btn" onclick="saveEntry()">Save Entry</button>
+              <button class="delete-btn" id="deleteBtn" onclick="deleteEntry()" style="display:none">Delete</button>
+              <span class="save-feedback" id="saveFb">✓ Saved!</span>
+              <span class="word-count" id="wordCount">0 words</span>
+            </div>
+          </div>
+        </div>
+        <div class="journal-main" id="jview-read" style="display:none"><div class="journal-inner"><div id="readContent"></div></div></div>
+        <div class="journal-main" id="jview-insights" style="display:none"><div class="journal-inner"><div id="insightsContent"></div></div></div>
+      </div>
+    </div>
+
+    <!-- FINANCE VIEW -->
+    <div class="view" id="view-finance">
+      <div id="fview-overview" class="page-inner" style="max-width:1000px;">
+        <div class="page-title">Financial Overview</div>
+        <p class="page-sub" id="fin-today-sub"></p>
+        <div id="debtBanner" style="display:none"></div>
+        <div class="fin-grid-top" id="kpiCards"></div>
+        <div class="fin-2col">
+          <div class="fin-chart-card"><h3>Spending by Category <span style="font-size:10px;color:var(--ink-faint)">— this month</span></h3><div id="catBreakdown"></div></div>
+          <div class="fin-chart-card"><h3>Daily Spending <span style="font-size:10px;color:var(--ink-faint)">— last 10 days</span></h3><div id="dailyTrend"></div></div>
+        </div>
+        <div class="fin-chart-card" style="margin-bottom:18px;"><h3>Debt Snapshot</h3><div id="debtSnapshot"></div></div>
+      </div>
+      <div id="fview-expenses" class="page-inner" style="max-width:1000px;display:none;">
+        <div class="page-title">Daily Expenses</div>
+        <p class="page-sub">Log every transaction. Small amounts add up — tracking builds awareness.</p>
+        <div class="exp-layout">
+          <div class="exp-form">
+            <h3>Add Transaction</h3>
+            <label class="fin-label">Amount (SAR)</label><input class="fin-input" type="number" id="expAmt" placeholder="0.00">
+            <label class="fin-label">Description</label><input class="fin-input" type="text" id="expDesc" placeholder="e.g. Lunch at work">
+            <label class="fin-label">Date</label><input class="fin-input" type="date" id="expDate">
+            <label class="fin-label">Category</label>
+            <div class="cat-grid">
+              <button class="cat-btn" data-cat="Food" onclick="selCat(this)">🍔 Food</button>
+              <button class="cat-btn" data-cat="Transport" onclick="selCat(this)">🚗 Transport</button>
+              <button class="cat-btn" data-cat="Health" onclick="selCat(this)">💊 Health</button>
+              <button class="cat-btn" data-cat="Shopping" onclick="selCat(this)">🛍 Shopping</button>
+              <button class="cat-btn" data-cat="Entertainment" onclick="selCat(this)">🎬 Entertain</button>
+              <button class="cat-btn" data-cat="Bills" onclick="selCat(this)">🧾 Bills</button>
+              <button class="cat-btn" data-cat="Savings" onclick="selCat(this)">💰 Savings</button>
+              <button class="cat-btn" data-cat="Debt" onclick="selCat(this)">💳 Debt Pay</button>
+              <button class="cat-btn" data-cat="Other" onclick="selCat(this)">📦 Other</button>
+            </div>
+            <button class="add-exp-btn" onclick="addExpense()">+ Add Expense</button>
+          </div>
+          <div><div class="exp-list"><h3>Recent Transactions</h3><div id="expItems"></div></div></div>
+        </div>
+      </div>
+      <div id="fview-debts" class="page-inner" style="max-width:1000px;display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;flex-wrap:wrap;gap:10px;">
+          <div><div class="page-title">Debt Tracker</div><p class="page-sub" style="margin-bottom:0;">Track balances, payments, and payoff progress.</p></div>
+          <button onclick="document.getElementById('addDebtModal').classList.add('open')" style="padding:9px 18px;background:var(--finance);color:white;border:none;border-radius:7px;font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px;">+ Add Debt</button>
+        </div>
+        <div id="debtCards" style="margin-top:20px;"></div>
+        <div id="payoffSection" style="margin-top:20px;display:none;"><div class="callout blue"><strong>Payoff Strategy:</strong> Focus extra payments on highest-interest debt first (Avalanche method).</div></div>
+      </div>
+      <div id="fview-networth" class="page-inner" style="max-width:800px;display:none;">
+        <div class="page-title">Net Worth Calculator</div>
+        <p class="page-sub">Assets − Liabilities = Your Real Financial Position.</p>
+        <div style="background:linear-gradient(135deg,var(--finance) 0%,#1a4a6a 100%);border-radius:14px;padding:28px 36px;margin-bottom:24px;color:white;text-align:center;box-shadow:0 8px 32px rgba(45,106,143,.3);">
+          <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;opacity:.7;margin-bottom:6px">Total Net Worth</div>
+          <div style="font-family:'Playfair Display',serif;font-size:46px;font-weight:600;" id="bigNetWorth">SAR 0</div>
+          <div style="font-size:12px;opacity:.65;margin-top:5px;" id="nwSubtitle">Add your assets and liabilities below</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+          <div class="nw-section"><h3 style="color:var(--sage);">✦ Assets</h3><div id="assetsList"></div><div class="nw-total-row assets"><span style="font-weight:700;font-size:12px;">Total Assets</span><span style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--sage);" id="totalAssets">SAR 0</span></div><button class="nw-add-btn" onclick="openNWModal('asset')">+ Add Asset</button></div>
+          <div class="nw-section"><h3 style="color:var(--rust);">✦ Liabilities</h3><div id="liabList"></div><div class="nw-total-row liabilities"><span style="font-weight:700;font-size:12px;">Total Liabilities</span><span style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--rust);" id="totalLiab">SAR 0</span></div><button class="nw-add-btn" onclick="openNWModal('liability')">+ Add Liability</button></div>
+        </div>
+        <div class="callout blue" style="margin-top:18px;"><strong>Tip:</strong> Debts are auto-synced here as liabilities from the Debt Tracker tab.</div>
+      </div>
+      <div id="fview-insights" class="page-inner" style="max-width:800px;display:none;">
+        <div class="page-title">AI Financial Insights</div>
+        <p class="page-sub">Pattern analysis and personalized advice based on your actual data.</p>
+        <div id="autoInsights" style="margin-bottom:22px;"></div>
+        <div class="ai-card"><h3>🤖 Deep AI Analysis</h3><p style="font-size:12px;color:var(--ink-faint);font-style:italic;margin-bottom:12px;">Personalized advice based on your spending, debt load, and net worth.</p><button class="ai-fin-btn" id="aiFinBtn" onclick="runFinAI()"><span id="aiFinTxt">✦ Analyze My Finances</span></button><div class="ai-result" id="aiFinResult" style="margin-top:14px;"></div></div>
+      </div>
+    </div>
+
+    <!-- YEAR PLAN VIEW -->
+    <div class="view" id="view-yearplan">
+      <div id="yview-today" class="page-inner"><div class="page-title">Today's Plan</div><p class="page-sub" id="ySub"></p><div class="today-banner"><div class="today-banner-top"><div><div style="font-size:10px;letter-spacing:3px;opacity:.5;text-transform:uppercase">Today</div><div class="today-day" id="tdDay"></div></div><div id="tdDate" style="font-size:11px;opacity:.5;"></div><div class="today-badge" id="tdBadge"></div></div><div class="today-blocks" id="tdBlocks"></div></div><div class="callout" id="todayTip"></div></div>
+      <div id="yview-weekday" class="page-inner" style="display:none;"><div class="page-title">Weekday Blueprints</div><p class="page-sub">Three modes for three kinds of consulting days.</p><div class="yp-day-grid" id="weekdayCards"></div><div class="callout" style="margin-top:22px;"><strong>The 2-Day Rule:</strong> Never let two consecutive days pass with zero study. One bad day is a pause. Two in a row becomes a habit.</div></div>
+      <div id="yview-weekend" class="page-inner" style="display:none;"><div class="page-title">Weekend Blueprint</div><p class="page-sub">Weekends are for deeper work AND genuine rest.</p><div class="yp-day-grid" id="weekendCards"></div></div>
+      <div id="yview-phases" class="page-inner" style="display:none;"><div class="page-title">The Year in Phases</div><p class="page-sub">Breaking it into phases gives you milestones to celebrate.</p><div class="phases-list" id="phasesList"></div></div>
+      <div id="yview-rules" class="page-inner" style="display:none;"><div class="page-title">Rules for Not Quitting</div><p class="page-sub">These are the real rules that make any plan actually work.</p><div class="yp-rule-grid" id="ruleCards"></div><div class="callout" style="margin-top:22px;"><strong>The honest truth:</strong> You will fall behind. What separates people who succeed isn't perfect adherence. It's the ability to restart without drama.</div></div>
+      <div id="yview-checkin" class="page-inner" style="display:none;">
+        <div class="page-title">Weekly Check-in</div><p class="page-sub">Tick what you did this week — no judgment, just honesty.</p>
+        <div class="checklist-grid" id="checklist">
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>GRE Study</strong> — at least 3 sessions</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>English Practice</strong> — 4+ days</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Never missed twice</strong> — no 2-day gaps</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Work study</strong> — read or learned something</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Rest protected</strong> — one guilt-free evening</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Did something fun</strong> — movie, book, social</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Weekend deep session</strong> — at least one</div></div>
+          <div class="check-item" onclick="ck(this)"><div class="check-box">✓</div><div class="check-text"><strong>Consistent bedtime</strong> — most nights before 11 PM</div></div>
+        </div>
+        <div class="score-bar-wrap" style="margin-top:22px;"><div class="score-fill" id="scoreBar" style="width:0%"></div></div>
+        <div class="score-label" id="scoreLabel">Tick items above to see your weekly score</div>
+        <div class="score-msg" id="scoreMsg"></div>
+      </div>
+    </div>
+
+    <!-- RESOURCES VIEW -->
+    <div class="view" id="view-resources">
+      <div id="rview-gre" class="page-inner" style="max-width:1000px;">
+        <div class="page-title">GRE Preparation Resources</div>
+        <p class="page-sub">Covering Quantitative, Verbal, and Analytical Writing — with what to use and when.</p>
+        <div class="callout"><strong>Start here:</strong> Take the free official ETS PowerPrep test in week 1 before studying anything. Your diagnostic score tells you exactly where to focus. Skipping this wastes months.</div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--gre-q)">Official ETS Resources — Always Use These</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">ETS PowerPrep Online</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">2 full-length official GRE practice tests with real retired questions. Use one for diagnosis (Month 1), one for final dress rehearsal (Month 10).</div><div class="res-use">When: Week 1 + Month 10</div><a class="res-url" href="https://www.ets.org/gre/test-takers/general-test/prepare/powerprep.html" target="_blank">ets.org → PowerPrep</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">Official GRE Guide (Big Book)</div><span class="res-tag tag-book">Book ~$35</span></div><div class="res-desc">The official ETS prep book with real questions and explanations. The Quant and Verbal review sections are foundational. Buy the latest edition only.</div><div class="res-use">When: Months 1–6, as your primary reference</div><a class="res-url" href="https://www.amazon.com/s?k=Official+GRE+Super+Power+Pack" target="_blank">Amazon → Official GRE Guide</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">ETS Verbal Reasoning Practice</div><span class="res-tag tag-book">Book ~$20</span></div><div class="res-desc">150 real Verbal questions from ETS with explanations. Far more valuable than third-party verbal prep.</div><div class="res-use">When: Months 3–8 for verbal deep-dive</div><a class="res-url" href="https://www.ets.org/gre/test-takers/general-test/prepare/materials.html" target="_blank">ets.org → Practice Books</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">ETS Quant Reasoning Practice</div><span class="res-tag tag-book">Book ~$20</span></div><div class="res-desc">150 real Quant questions with detailed explanations. Essential for understanding how ETS tests math — the logic and traps are distinct from standard problems.</div><div class="res-use">When: Months 2–7 for quant deep-dive</div><a class="res-url" href="https://www.ets.org/gre/test-takers/general-test/prepare/materials.html" target="_blank">ets.org → Practice Books</a></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--gre-v)">Third-Party Prep — Pick One or Two</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">Magoosh GRE</div><span class="res-tag tag-paid">~$149 / 6mo</span></div><div class="res-desc">Best overall structured prep. 200+ video lessons, 1,000+ practice questions. Mobile app excellent for commute sessions. Tracks weak areas automatically.</div><div class="res-use">Best for: Busy days, commute study, adaptive practice</div><a class="res-url" href="https://magoosh.com/gre/" target="_blank">magoosh.com/gre</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">Manhattan Prep GRE 5lb Book</div><span class="res-tag tag-book">Book ~$30</span></div><div class="res-desc">Over 1,800 practice problems. Great for drilling weak areas. Heavy quant focus. Use surgically by chapter — not cover to cover.</div><div class="res-use">Best for: Deep Quant drilling, Months 4–8</div><a class="res-url" href="https://www.amazon.com/s?k=Manhattan+Prep+GRE+5lb" target="_blank">Amazon → Manhattan 5lb</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">GregMat+ (YouTube + Paid)</div><span class="res-tag tag-freemium">$5/mo</span></div><div class="res-desc">Arguably the best free GRE content online. Vocabulary method, AWA templates, and quant strategy videos are exceptional.</div><div class="res-use">Best for: Verbal strategy + AWA, all phases</div><a class="res-url" href="https://www.gregmat.com" target="_blank">gregmat.com</a></div><div class="res-card"><div class="res-priority p-nice"></div><div class="res-header"><div class="res-name">Khan Academy (Math Review)</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">If your algebra or arithmetic is rusty, Khan Academy is the cleanest way to rebuild from scratch before starting GRE quant.</div><div class="res-use">Best for: Foundational math gaps, Months 1–3</div><a class="res-url" href="https://www.khanacademy.org" target="_blank">khanacademy.org</a></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--gre-w)">Vocabulary + AWA</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">Magoosh GRE Vocabulary App</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">1,000 GRE words with audio and spaced repetition. Do 10–15 words per day. Consistency beats cramming completely.</div><div class="res-use">Daily: 10 min on commute or before bed</div><a class="res-url" href="https://magoosh.com/gre/gre-vocabulary-flashcards/" target="_blank">magoosh.com → Vocab App</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">ETS AWA Pool of Topics</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">ETS publishes the complete pool of essay prompts. Your actual exam essay WILL come from this list. Practice with these only.</div><div class="res-use">When: Months 5–10, write 1–2 essays per week</div><a class="res-url" href="https://www.ets.org/gre/test-takers/general-test/prepare/verbal-reasoning/analytical-writing.html" target="_blank">ets.org → AWA Pools</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">Word Power Made Easy</div><span class="res-tag tag-book">Book ~$12</span></div><div class="res-desc">Teaches roots, prefixes, and suffixes — so you can decode unfamiliar GRE words. A week with this book pays dividends for years.</div><div class="res-use">Best for: Month 1–2, understanding word roots</div><a class="res-url" href="https://www.amazon.com/s?k=Word+Power+Made+Easy+Norman+Lewis" target="_blank">Amazon → Word Power</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">GregMat AWA Templates</div><span class="res-tag tag-free">Free (YouTube)</span></div><div class="res-desc">Proven essay structure that gets 4.5–5.5 scores reliably. As a consultant, you're already good at structured argument — this translates directly.</div><div class="res-use">Watch once in Month 3, then practice with ETS prompts</div><a class="res-url" href="https://www.youtube.com/c/GregMat" target="_blank">YouTube → GregMat AWA</a></div></div></div>
+      </div>
+      <div id="rview-english" class="page-inner" style="max-width:1000px;display:none;">
+        <div class="page-title">English Test Resources</div>
+        <p class="page-sub">Covers IELTS, TOEFL, and daily immersion. Focus on the test your target programs accept.</p>
+        <div class="callout blue"><strong>Which test?</strong> Most US schools accept TOEFL or Duolingo. UK/Australia programs prefer IELTS. Confirm before committing months of prep.</div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--eng-r)">IELTS Resources</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">British Council IELTS Prep</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">Free official practice materials and sample tests for all four IELTS skills. Reading and Listening tests are accurate to the real exam.</div><div class="res-use">Primary free resource for all IELTS prep</div><a class="res-url" href="https://www.britishcouncil.org/exam/ielts/preparation" target="_blank">britishcouncil.org → IELTS</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">Cambridge IELTS Practice Tests</div><span class="res-tag tag-book">Books ~$25 each</span></div><div class="res-desc">Real past exam papers. Buy at least 2 volumes — one early for diagnosis, one late for final prep.</div><div class="res-use">Months 1 + 9–10 for timed practice</div><a class="res-url" href="https://www.amazon.com/s?k=Cambridge+IELTS+Practice+Tests" target="_blank">Amazon → Cambridge IELTS</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">E2 IELTS (YouTube)</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">Particularly strong for Speaking and Writing tutorials. Their band 7+ writing guide is clear and practical.</div><div class="res-use">Strategy videos for Writing + Speaking</div><a class="res-url" href="https://www.youtube.com/@E2IELTS" target="_blank">YouTube → E2 IELTS</a></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--eng-l)">TOEFL Resources</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">ETS TOEFL Official Prep</div><span class="res-tag tag-freemium">Free + Paid</span></div><div class="res-desc">Official TOEFL practice tests from ETS. Full Official Practice Tests (~$40 for 4 tests) are the most accurate simulation available.</div><div class="res-use">Diagnosis (Month 1) + Dress rehearsal (Month 10)</div><a class="res-url" href="https://www.ets.org/toefl/test-takers/ibt/prepare.html" target="_blank">ets.org → TOEFL Prep</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">Magoosh TOEFL</div><span class="res-tag tag-paid">~$99 / 3mo</span></div><div class="res-desc">150+ video lessons, practice questions, and full mock tests. If using Magoosh for GRE already, consider bundling.</div><div class="res-use">Months 3–9 for structured skill building</div><a class="res-url" href="https://magoosh.com/toefl/" target="_blank">magoosh.com/toefl</a></div><div class="res-card"><div class="res-priority p-high"></div><div class="res-header"><div class="res-name">NoteFull TOEFL (YouTube)</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">Exceptional free TOEFL Speaking and Writing tutorials. Template approach for Speaking is particularly well-regarded.</div><div class="res-use">Speaking practice — weekly sessions</div><a class="res-url" href="https://www.youtube.com/@notefull" target="_blank">YouTube → NoteFull</a></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--eng-s)">Daily English Immersion</div><div class="resource-grid"><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">The Economist / BBC</div><span class="res-tag tag-freemium">Freemium</span></div><div class="res-desc">Reading high-quality English daily is the single best way to improve reading and vocabulary simultaneously.</div><div class="res-use">Daily: 1 article at breakfast or commute</div><a class="res-url" href="https://www.bbc.com/news" target="_blank">bbc.com/news (free)</a></div><div class="res-card"><div class="res-priority p-must"></div><div class="res-header"><div class="res-name">Podcasts in English</div><span class="res-tag tag-free">Free</span></div><div class="res-desc">BBC 6 Minute English, TED Talks, Hidden Brain, Freakonomics. These match the accent variety of test listening sections. No subtitles — train your ear.</div><div class="res-use">Commute or exercise: 20 min/day</div></div><div class="res-card"><div class="res-priority p-nice"></div><div class="res-header"><div class="res-name">Movies &amp; TV in English</div><span class="res-tag tag-free">You have this</span></div><div class="res-desc">Watch in English with English subtitles. This trains listening, exposes you to idiomatic language, and is genuinely relaxing. This counts as practice.</div><div class="res-use">Evening leisure time — log it as English practice</div></div></div></div>
+      </div>
+      <div id="rview-notes" class="page-inner" style="max-width:900px;display:none;">
+        <div class="page-title">Notes System</div>
+        <p class="page-sub">One system for everything — GRE, English, work. No scattered notebooks.</p>
+        <div class="callout sage"><strong>The principle:</strong> Notes are only useful if you review them. A simple system you use beats an elaborate one you abandon. Pick ONE tool.</div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--sage)">Recommended Tools — Pick One</div><div class="resource-grid"><div class="res-card" style="border-color:var(--accent)"><div class="res-name" style="padding-left:0;font-size:15px;margin-bottom:8px;">📓 Notion — Best Overall</div><div class="res-desc" style="padding-left:0;">Free, syncs across all devices. Create a "Study Hub" with pages for GRE Vocab, GRE Mistakes, English Notes, and Work Learning.</div><div class="res-use">Best for: People who want structure and cross-device access.</div><a class="res-url" href="https://www.notion.so" target="_blank" style="padding-left:0;">notion.so (free)</a></div><div class="res-card"><div class="res-name" style="padding-left:0;font-size:15px;margin-bottom:8px;">🃏 Anki — Best for Memorization</div><div class="res-desc" style="padding-left:0;">Spaced-repetition flashcard app. Scientifically proven to be the most efficient memorization method. Use for GRE vocab and formulas.</div><div class="res-use">Best for: Vocabulary, formulas, anything needing long-term memorization.</div><a class="res-url" href="https://apps.ankiweb.net" target="_blank" style="padding-left:0;">apps.ankiweb.net (free)</a></div><div class="res-card"><div class="res-name" style="padding-left:0;font-size:15px;margin-bottom:8px;">📱 Apple Notes / Google Keep</div><div class="res-desc" style="padding-left:0;">Zero friction — always there, always fast. Use one note per topic and update immediately when you learn something. Simplicity wins.</div><div class="res-use">Best for: People who hate app-switching.</div></div><div class="res-card"><div class="res-name" style="padding-left:0;font-size:15px;margin-bottom:8px;">📔 Physical Notebook (A5)</div><div class="res-desc" style="padding-left:0;">One A5 notebook with index tabs: GRE Quant, GRE Verbal, English, Work. Writing by hand improves retention.</div><div class="res-use">Best for: Deep work sessions and people who retain info better writing by hand.</div></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--sage)">What to Actually Note Down</div><div style="display:grid;gap:12px;"><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">📐 GRE Quant — Error Log</div><div style="font-size:13px;color:var(--ink-faint);line-height:1.75;">Every wrong question: write (1) question type, (2) what you thought, (3) what was correct, (4) the rule you missed. Review weekly — you'll see patterns.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">📖 GRE Verbal — Vocabulary Cards</div><div style="font-size:13px;color:var(--ink-faint);line-height:1.75;">New word: write the word, definition, root, and an example sentence you write yourself. Use Anki to review. Target: 10 new words/day.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">✍️ AWA — Essay Feedback Log</div><div style="font-size:13px;color:var(--ink-faint);line-height:1.75;">After every essay: note thesis quality, examples used, time taken (aim under 30 min), and one thing to improve next time.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">💼 Work Learning — Quick Captures</div><div style="font-size:13px;color:var(--ink-faint);line-height:1.75;">After any training or article: (1) what you learned, (2) how it connects to what you know, (3) one question it raised. Takes 5 minutes.</div></div></div></div>
+      </div>
+      <div id="rview-practice" class="page-inner" style="max-width:900px;display:none;">
+        <div class="page-title">Practice Methods</div>
+        <p class="page-sub">How to practice — not just what to practice. Method is everything.</p>
+        <div class="res-section"><div class="res-section-label" style="color:var(--gre-q)">GRE Practice Methods</div><div style="display:grid;gap:10px;"><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Timed sets, not individual questions.</strong> Always practice in timed sets of 10–20. Your brain needs to practice managing time and fatigue.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Brutal post-mortem every session.</strong> Spend as long reviewing wrong answers as solving problems. Understanding why you were wrong is 10x more valuable than doing more questions.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Simulate test conditions for mock tests.</strong> No phone. Timed. No pausing. Proper desk. Same time as your actual exam. Train for real conditions.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>AWA: Write, then compare to scored samples.</strong> Write in 30 minutes, then read ETS scored samples at your target band. Fix one gap at a time.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Vocab: Spaced repetition only.</strong> Don't re-read lists. Use Anki or Magoosh. Reviewing words you already know is wasted time.</div></div></div></div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--eng-r)">English Test Practice Methods</div><div style="display:grid;gap:10px;"><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--sage);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Speaking: Record yourself, then listen back.</strong> You'll hear filler words, grammar errors, and pacing issues you'd never notice otherwise.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--sage);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Writing: Use actual prompts, timed.</strong> IELTS Task 1 = 20 min, Task 2 = 40 min. TOEFL Integrated = 20 min, Independent = 30 min. Time pressure is part of what you're training.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--sage);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Listening: Active listening exercises.</strong> Pause a podcast after 2–3 minutes and write down the 3 main points from memory. This mimics TOEFL Integrated note-taking.</div></div><div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;gap:12px;"><span style="color:var(--sage);font-weight:700;flex-shrink:0;">→</span><div style="font-size:13px;line-height:1.7;"><strong>Immersion beats drills.</strong> A film in English for 2 hours is more effective for fluency than 2 hours of grammar exercises. Immersion makes the language feel natural under pressure.</div></div></div></div>
+      </div>
+      <div id="rview-stack" class="page-inner" style="max-width:900px;display:none;">
+        <div class="page-title">Your Complete Stack</div>
+        <p class="page-sub">The minimal set of resources that covers everything you need without overwhelm.</p>
+        <div class="callout"><strong>The law of too many resources:</strong> 10 prep books at 10% each = worse than 2 books at 100%. Pick your stack, commit, and go deep.</div>
+        <div class="res-section"><div class="res-section-label" style="color:var(--accent)">Must Have — The Non-Negotiables</div><div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:white;"><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--border);"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--gre-q);border-right:1px solid var(--border);background:var(--warm);">GRE Core</div><div style="padding:12px 14px;font-size:13px;">ETS Official Guide + PowerPrep tests + Magoosh GRE app<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">~$200 total · covers everything from Quant to AWA</span></div></div><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--border);"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--gre-v);border-right:1px solid var(--border);background:var(--warm);">GRE Vocab</div><div style="padding:12px 14px;font-size:13px;">Magoosh Vocab App (free) + Word Power Made Easy<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">Free + $12 · daily 10-minute habit</span></div></div><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--border);"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--gre-w);border-right:1px solid var(--border);background:var(--warm);">GRE AWA</div><div style="padding:12px 14px;font-size:13px;">GregMat YouTube (free) + ETS AWA prompt pool<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">Free · write 1 essay/week, compare to ETS samples</span></div></div><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--border);"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--eng-r);border-right:1px solid var(--border);background:var(--warm);">IELTS/TOEFL</div><div style="padding:12px 14px;font-size:13px;">Official ETS or British Council + 2 Cambridge practice test books<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">~$80 total · always use official materials for mock tests</span></div></div><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--border);"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--eng-s);border-right:1px solid var(--border);background:var(--warm);">Daily English</div><div style="padding:12px 14px;font-size:13px;">BBC / The Economist + TED / BBC podcast + films you enjoy<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">Free · woven into your daily life, not extra study time</span></div></div><div style="display:grid;grid-template-columns:110px 1fr;"><div style="padding:12px 14px;font-size:10px;font-weight:700;color:var(--sage);border-right:1px solid var(--border);background:var(--warm);">Focus Tools</div><div style="padding:12px 14px;font-size:13px;">Notion + Anki + Forest App + Toggl Track<span style="display:block;font-size:11px;color:var(--ink-faint);font-style:italic;margin-top:1px;">~$4 total · makes study sessions measurable</span></div></div></div></div>
+        <div class="callout" style="margin-top:8px;"><strong>Final note:</strong> The resources above are complete. You don't need more. What you need now is consistent, focused hours over twelve months. The rest is just showing up, again and again.</div>
+      </div>
+    </div>
+
+    <!-- SECURITY VIEW -->
+    <div class="view" id="view-security">
+      <div class="page-inner">
+        <div class="page-title">Security Settings</div>
+        <p class="page-sub">Manage your PIN, sync key, and access settings.</p>
+        <div class="security-card" style="margin-bottom:20px;">
+          <h3>🔑 Change PIN</h3>
+          <p style="font-size:13px;color:var(--ink-light);margin-bottom:16px;line-height:1.7;">Your hub is protected by a 4-digit PIN. Default is <strong>1234</strong>.</p>
+          <button class="save-btn" onclick="document.getElementById('changePinModal').classList.add('open')">Change PIN</button>
+          <div id="pinOkMsg" style="font-size:13px;color:var(--sage);font-weight:700;margin-top:12px;opacity:0;transition:opacity .4s;">✓ PIN changed successfully!</div>
+        </div>
+        <div class="security-card">
+          <h3>☁️ Sync Key</h3>
+          <p style="font-size:13px;color:var(--ink-light);margin-bottom:8px;line-height:1.7;">Your current sync key. Use this exact key on any device to access your data.</p>
+          <div style="background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-family:monospace;font-size:14px;color:var(--ink);letter-spacing:1px;margin-bottom:14px;" id="currentKeyDisplay">—</div>
+          <button class="save-btn" style="background:var(--ink);" onclick="showChangeSyncKey()">Change Sync Key</button>
+          <div id="changeSyncKeyForm" style="display:none;margin-top:16px;">
+            <input type="text" id="newSyncKey" placeholder="Enter new sync key" style="width:100%;border:1px solid var(--border);border-radius:7px;background:var(--warm);padding:10px 13px;font-family:'Lato',sans-serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:10px;">
+            <div style="display:flex;gap:8px;">
+              <button class="save-btn" onclick="changeSyncKey()">Save New Key</button>
+              <button class="modal-cancel" onclick="document.getElementById('changeSyncKeyForm').style.display='none'">Cancel</button>
+            </div>
+            <p style="font-size:11px;color:var(--rust);margin-top:8px;line-height:1.6;">⚠️ Changing your sync key will link to a new (empty) data space. Your old data will still be accessible by entering your old key on the sync screen.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// PIN
+// ══════════════════════════════════════════
+const PIN_KEY='myhub_pin_v2';
+let pb='',secOk=false;
+const getPin=()=>localStorage.getItem(PIN_KEY)||'1234';
+function pi(d){if(pb.length>=4)return;pb+=d;dots();if(pb.length===4)setTimeout(chkPin,120);}
+function pd(){if(pb.length){pb=pb.slice(0,-1);dots();}}
+function dots(){for(let i=0;i<4;i++){const el=document.getElementById('d'+i);el.classList.remove('error');el.classList.toggle('filled',i<pb.length);}}
+function chkPin(){
+  if(pb===getPin()){
+    document.getElementById('lockScreen').classList.add('unlocking');
+    setTimeout(()=>{document.getElementById('lockScreen').style.display='none';showSyncScreen();},480);
+  } else {
+    document.getElementById('lockErr').textContent='Incorrect PIN.';
+    for(let i=0;i<4;i++)document.getElementById('d'+i).classList.add('error');
+    setTimeout(()=>{pb='';dots();document.getElementById('lockErr').textContent='';},600);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('lockScreen').style.display==='none')return;
+  if(e.key>='0'&&e.key<='9')pi(e.key);
+  if(e.key==='Backspace')pd();
+});
+function lockApp(){
+  pb='';dots();document.getElementById('lockErr').textContent='';
+  secOk=false;userKey='';
+  document.getElementById('lockScreen').style.display='flex';
+  document.getElementById('lockScreen').classList.remove('unlocking');
+  document.getElementById('syncScreen').classList.remove('show');
+  document.getElementById('app').style.display='none';
+}
+function closeVerify(){document.getElementById('verifyModal').classList.remove('open');if(!secOk)goTo('journal');}
+function confirmVerify(){if(document.getElementById('vIn').value.trim()!==getPin()){document.getElementById('vErr').textContent='Incorrect PIN.';document.getElementById('vIn').value='';return;}secOk=true;document.getElementById('verifyModal').classList.remove('open');}
+function savePin(){const cur=document.getElementById('cpCur').value.trim(),nw=document.getElementById('cpNew').value.trim(),cf=document.getElementById('cpCon').value.trim(),err=document.getElementById('cpErr');if(cur!==getPin()){err.textContent='Current PIN is incorrect.';return;}if(!/^\d{4}$/.test(nw)){err.textContent='New PIN must be exactly 4 digits.';return;}if(nw!==cf){err.textContent='PINs do not match.';return;}localStorage.setItem(PIN_KEY,nw);document.getElementById('changePinModal').classList.remove('open');const m=document.getElementById('pinOkMsg');m.style.opacity='1';setTimeout(()=>m.style.opacity='0',2500);}
+
+// ══════════════════════════════════════════
+// SYNC KEY + CLOUD STORAGE
+// ══════════════════════════════════════════
+let userKey='';
+
+function showSyncScreen(){
+  // Check if we have a remembered key
+  const remembered=localStorage.getItem('myhub_synckey');
+  if(remembered){
+    document.getElementById('syncKeyInput').value=remembered;
+  }
+  document.getElementById('syncScreen').classList.add('show');
+  setTimeout(()=>document.getElementById('syncKeyInput').focus(),300);
+}
+
+async function enterWithKey(){
+  const raw=document.getElementById('syncKeyInput').value.trim();
+  const err=document.getElementById('syncErr');
+  if(!raw||raw.length<4){err.textContent='Please enter a key of at least 4 characters.';return;}
+  if(/\s/.test(raw)){err.textContent='Key cannot contain spaces.';return;}
+  err.textContent='';
+  const btn=document.getElementById('syncBtn');
+  btn.disabled=true;btn.textContent='Loading…';
+  userKey=raw;
+  localStorage.setItem('myhub_synckey',raw);
+  const status=document.getElementById('syncStatus');
+  status.textContent='✓ Loading your data…';status.classList.add('show');
+  await loadAllFromCloud();
+  document.getElementById('syncScreen').classList.remove('show');
+  document.getElementById('app').style.display='block';
+  btn.disabled=false;btn.textContent='Enter My Hub →';
+  status.classList.remove('show');
+  initApp();
+}
+
+document.getElementById('syncKeyInput').addEventListener('keydown',e=>{if(e.key==='Enter')enterWithKey();});
+
+function syncKey(type){return `${userKey}:${type}`;}
+
+async function saveToCloud(type,data){
+  setSyncStatus('syncing');
+  try{
+    await window.storage.set(syncKey(type),JSON.stringify(data),false);
+    setSyncStatus('ok');
+  } catch(e){setSyncStatus('error');console.error('Save error',e);}
+}
+
+async function loadFromCloud(type){
+  try{
+    const r=await window.storage.get(syncKey(type),false);
+    return r?JSON.parse(r.value):null;
+  } catch(e){return null;}
+}
+
+async function loadAllFromCloud(){
+  const [j,f]=await Promise.all([loadFromCloud('journal'),loadFromCloud('finance')]);
+  if(j)entries=j;
+  if(f)fin=f;
+}
+
+function setSyncStatus(state){
+  const dot=document.getElementById('syncDot'),lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot';
+  if(state==='syncing'){dot.classList.add('syncing');lbl.textContent='Syncing…';}
+  else if(state==='error'){dot.classList.add('error');lbl.textContent='Sync error';}
+  else{lbl.textContent='Synced';}
+}
+
+async function forcSync(){
+  setSyncStatus('syncing');
+  await loadAllFromCloud();
+  renderJournalSidebar();
+  renderOverview();
+  setSyncStatus('ok');
+}
+
+function showChangeSyncKey(){document.getElementById('changeSyncKeyForm').style.display='block';document.getElementById('newSyncKey').focus();}
+function changeSyncKey(){
+  const nk=document.getElementById('newSyncKey').value.trim();
+  if(!nk||nk.length<4){alert('Key must be at least 4 characters.');return;}
+  if(/\s/.test(nk)){alert('Key cannot contain spaces.');return;}
+  userKey=nk;localStorage.setItem('myhub_synckey',nk);
+  document.getElementById('currentKeyDisplay').textContent=nk;
+  document.getElementById('changeSyncKeyForm').style.display='none';
+  document.getElementById('newSyncKey').value='';
+  alert('Sync key changed. You are now in a new data space.');
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+const SECTIONS=['journal','finance','yearplan','resources','security'];
+let curSection='journal';
+function goTo(sec){
+  if(sec==='security'&&!secOk){curSection='security';setSection('security');document.getElementById('verifyModal').classList.add('open');setTimeout(()=>document.getElementById('vIn').focus(),100);return;}
+  curSection=sec;setSection(sec);
+  if(sec==='journal')renderJournalSidebar();
+  if(sec==='finance'){renderOverview();fTab('overview');}
+  if(sec==='yearplan'){buildToday();yTab('today');}
+  if(sec==='resources')rTab('gre');
+}
+function setSection(sec){
+  SECTIONS.forEach(s=>{
+    document.getElementById('nav-'+s).classList.toggle('active',s===sec);
+    document.getElementById('tabs-'+s).classList.toggle('active',s===sec);
+    document.getElementById('view-'+s).classList.toggle('active',s===sec);
+  });
+  document.getElementById('journalSidebarExtra').style.display=sec==='journal'?'flex':'none';
+}
+
+// ══════════════════════════════════════════
+// JOURNAL
+// ══════════════════════════════════════════
+let entries=[],curId=null,curMood=null;
+function initApp(){
+  document.getElementById('sidebarDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  document.getElementById('fin-today-sub').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('expDate').value=todayISO();
+  document.getElementById('currentKeyDisplay').textContent=userKey;
+  renderJournalSidebar();newEntry();buildToday();buildYPContent();renderOverview();
+}
+
+async function saveJournal(){await saveToCloud('journal',entries);}
+async function saveFinance(){await saveToCloud('finance',fin);}
+
+function renderJournalSidebar(){const el=document.getElementById('entriesList');if(!entries.length){el.innerHTML='<div style="text-align:center;padding:20px 10px;color:var(--ink-faint);font-size:12px;font-style:italic">No entries yet ✦</div>';return;}el.innerHTML=[...entries].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="entry-item ${e.id===curId?'active':''}" onclick="openEntry('${e.id}')"><div class="entry-item-date">${fmtShort(e.date)} ${e.mood||''}</div><div class="entry-item-preview">${e.title||e.body||'No content…'}</div></div>`).join('');}
+function fmtDate(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
+function fmtShort(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function newEntry(){const t=todayISO(),ex=entries.find(e=>e.date===t);if(ex){openEntry(ex.id);return;}curId=null;curMood=null;document.getElementById('entryFullDate').textContent=fmtDate(todayISO());document.getElementById('entryTitle').value='';document.getElementById('entryBody').value='';document.getElementById('deleteBtn').style.display='none';document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));updateWC();jTab('write');renderJournalSidebar();}
+function openEntry(id){const e=entries.find(x=>x.id===id);if(!e)return;curId=id;curMood=e.mood;document.getElementById('entryFullDate').textContent=fmtDate(e.date);document.getElementById('entryTitle').value=e.title||'';document.getElementById('entryBody').value=e.body||'';document.getElementById('deleteBtn').style.display='inline-block';document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.dataset.mood===e.mood));updateWC();renderJournalSidebar();}
+function selectMood(btn){document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));curMood=curMood===btn.dataset.mood?null:btn.dataset.mood;if(curMood)btn.classList.add('selected');}
+async function saveEntry(){const t=document.getElementById('entryTitle').value.trim(),b=document.getElementById('entryBody').value.trim();if(!t&&!b)return;const now=todayISO();if(curId){const i=entries.findIndex(e=>e.id===curId);if(i!==-1)entries[i]={...entries[i],title:t,body:b,mood:curMood};}else{const id='e'+Date.now();entries.push({id,date:now,title:t,body:b,mood:curMood});curId=id;document.getElementById('deleteBtn').style.display='inline-block';}renderJournalSidebar();await saveJournal();const fb=document.getElementById('saveFb');fb.classList.add('show');setTimeout(()=>fb.classList.remove('show'),2000);}
+async function deleteEntry(){if(!curId||!confirm('Delete this entry?'))return;entries=entries.filter(e=>e.id!==curId);await saveJournal();newEntry();}
+function updateWC(){const t=document.getElementById('entryBody').value.trim();const c=t?t.split(/\s+/).length:0;document.getElementById('wordCount').textContent=c+' word'+(c!==1?'s':'');}
+function jTab(t){['write','read','insights'].forEach(x=>{document.getElementById('jtab-'+x).classList.toggle('active',x===t);document.getElementById('jview-'+x).style.display=x===t?'block':'none';});if(t==='read')renderRead();if(t==='insights')renderInsights();}
+function renderRead(){const c=document.getElementById('readContent');if(!entries.length){c.innerHTML='<div class="empty-state"><div class="big-icon">📖</div><h2>Nothing here yet</h2></div>';return;}c.innerHTML=[...entries].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div style="margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border);"><div class="read-entry-date">${fmtDate(e.date)} ${e.mood||''}</div>${e.title?`<div class="read-entry-title">${e.title}</div>`:''}<div class="read-entry-body" style="margin-top:14px">${e.body||'<em style="color:var(--ink-faint)">No content.</em>'}</div></div>`).join('');}
+function renderInsights(){const c=document.getElementById('insightsContent');if(!entries.length){c.innerHTML='<div class="empty-state"><div class="big-icon">✨</div><h2>Start journaling to see insights</h2></div>';return;}const tw=entries.reduce((s,e)=>s+(e.body?e.body.trim().split(/\s+/).filter(Boolean).length:0),0),avg=Math.round(tw/entries.length),ds=new Set(entries.map(e=>e.date));let streak=0,d=new Date();while(true){const iso=d.toISOString().split('T')[0];if(ds.has(iso)){streak++;d.setDate(d.getDate()-1);}else break;}const moods=['😊','😌','😔','😤','🤩','😰'],mc={};moods.forEach(m=>mc[m]=0);entries.forEach(e=>{if(e.mood)mc[e.mood]=(mc[e.mood]||0)+1;});const maxM=Math.max(...Object.values(mc),1);c.innerHTML=`<div class="stats-grid"><div class="stat-card"><div class="stat-number">${entries.length}</div><div class="stat-label">Total Entries</div></div><div class="stat-card"><div class="stat-number">${tw.toLocaleString()}</div><div class="stat-label">Words Written</div></div><div class="stat-card"><div class="stat-number">${avg}</div><div class="stat-label">Avg Words/Entry</div></div></div><div class="streak-card"><h3>Current Streak</h3><div class="streak-number">${streak} day${streak!==1?'s':''} 🔥</div></div><div class="mood-chart"><h3>Mood Tracker</h3><div class="mood-bars">${moods.map(m=>`<div class="mood-bar-row"><span style="width:26px;font-size:17px">${m}</span><div class="mood-bar-track"><div class="mood-bar-fill" style="width:${mc[m]/maxM*100}%"></div></div><span style="font-size:11px;color:var(--ink-faint);width:18px;text-align:right">${mc[m]}</span></div>`).join('')}</div></div><div class="ai-card"><h3>✨ AI Reflection</h3><p style="font-size:12px;color:var(--ink-faint);font-style:italic;margin-bottom:12px;">Get a personalized reflection on your recent entries.</p><button class="analyze-btn" id="analyzeBtn" onclick="runAI()"><span id="analyzeTxt">✦ Analyze My Journal</span></button><div class="ai-result" id="aiResult"></div></div>`;}
+async function runAI(){const btn=document.getElementById('analyzeBtn'),res=document.getElementById('aiResult');btn.disabled=true;document.getElementById('analyzeTxt').innerHTML='<span class="spinner"></span> Thinking…';const recent=[...entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);const txt=recent.map(e=>`Date:${e.date}\nMood:${e.mood||'unset'}\nTitle:${e.title||'none'}\nEntry:${e.body||'(empty)'}`).join('\n---\n');try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are a warm, empathetic journaling coach. Analyze these journal entries and provide a thoughtful, personalized reflection (2–3 paragraphs). Be kind, insightful, encouraging.\n\n${txt}`}]})});const data=await r.json();res.innerHTML=(data.content?.map(c=>c.text||'').join('')||'Could not generate.').replace(/\n/g,'<br>');}catch(e){res.innerHTML='<em style="color:var(--rust)">Could not connect to AI.</em>';}btn.disabled=false;document.getElementById('analyzeTxt').textContent='✦ Analyze Again';}
+
+// ══════════════════════════════════════════
+// FINANCE
+// ══════════════════════════════════════════
+let fin={expenses:[],debts:[],assets:[],liabilities:[]};
+const fmt=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+const catColors={Food:'#e8774a',Transport:'#2d6a8f',Health:'#5a7a6a',Shopping:'#7b6fa0',Entertainment:'#c94b35',Bills:'#888',Savings:'#c9a84c',Debt:'#c94b35',Other:'#a0a0a0'};
+let selCatVal='';
+function selCat(btn){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selCatVal=btn.dataset.cat;}
+async function addExpense(){const amt=parseFloat(document.getElementById('expAmt').value),desc=document.getElementById('expDesc').value.trim(),date=document.getElementById('expDate').value||todayISO();if(!amt||amt<=0){alert('Enter a valid amount.');return;}if(!selCatVal){alert('Select a category.');return;}fin.expenses.unshift({id:'x'+Date.now(),amt,desc,date,cat:selCatVal});document.getElementById('expAmt').value='';document.getElementById('expDesc').value='';selCatVal='';document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('sel'));renderExpList();renderOverview();await saveFinance();}
+function renderExpList(){const el=document.getElementById('expItems'),today=todayISO(),recent=fin.expenses.slice(0,40);if(!recent.length){el.innerHTML='<div class="empty-state" style="padding:24px"><div class="big-icon">💸</div><p>No expenses logged yet.</p></div>';return;}el.innerHTML=recent.map(e=>`<div class="exp-item"><div class="exp-cat-dot" style="background:${catColors[e.cat]||'#aaa'}"></div><div class="exp-desc"><div>${e.desc||e.cat}</div><div class="exp-desc-sub">${e.cat} · ${e.date===today?'Today':fmtShort(e.date)}</div></div><div class="exp-amount">${fmt(e.amt)}</div><button class="exp-del" onclick="delExp('${e.id}')">✕</button></div>`).join('');}
+async function delExp(id){fin.expenses=fin.expenses.filter(e=>e.id!==id);renderExpList();renderOverview();await saveFinance();}
+async function saveDebt(){const name=document.getElementById('dName').value.trim(),total=parseFloat(document.getElementById('dTotal').value),remain=parseFloat(document.getElementById('dRemain').value),monthly=parseFloat(document.getElementById('dMonthly').value),rate=parseFloat(document.getElementById('dRate').value)||0,err=document.getElementById('dErr');if(!name){err.textContent='Enter a name.';return;}if(!total||!remain||!monthly){err.textContent='Fill in all required fields.';return;}fin.debts.push({id:'d'+Date.now(),name,total,remain,monthly,rate});document.getElementById('addDebtModal').classList.remove('open');['dName','dTotal','dRemain','dMonthly','dRate'].forEach(id=>document.getElementById(id).value='');renderDebts();renderNetWorth();renderOverview();await saveFinance();}
+function renderDebts(){const el=document.getElementById('debtCards');if(!fin.debts.length){el.innerHTML='<div class="empty-state"><div class="big-icon">💳</div><h2>No debts tracked</h2></div>';document.getElementById('payoffSection').style.display='none';return;}document.getElementById('payoffSection').style.display='block';el.innerHTML=`<table class="debt-table"><thead><tr><th>Debt</th><th>Remaining</th><th>Monthly</th><th>Rate</th><th>Progress</th><th>Months Left</th><th></th></tr></thead><tbody>${fin.debts.map(d=>{const pct=Math.round((1-d.remain/d.total)*100),mLeft=Math.ceil(d.remain/d.monthly),g=pct>=50;return`<tr><td><strong>${d.name}</strong></td><td style="font-family:'Playfair Display',serif;color:var(--rust)">${fmt(d.remain)}</td><td>${fmt(d.monthly)}</td><td>${d.rate?d.rate+'%':'—'}</td><td><div class="debt-progress"><div class="debt-progress-fill ${g?'good':''}" style="width:${pct}%"></div></div><span style="font-size:10px;color:var(--ink-faint);margin-left:5px">${pct}%</span></td><td style="font-size:12px;color:var(--ink-faint)">${mLeft} mo</td><td><button class="del-row-btn" onclick="delDebt('${d.id}')">Remove</button></td></tr>`;}).join('')}</tbody></table>`;}
+async function delDebt(id){fin.debts=fin.debts.filter(d=>d.id!==id);renderDebts();renderNetWorth();renderOverview();await saveFinance();}
+let nwMode='asset';
+function openNWModal(mode){nwMode=mode;document.getElementById('nwModalTitle').textContent=mode==='asset'?'Add Asset':'Add Liability';document.getElementById('nwSaveBtn').textContent=mode==='asset'?'Add Asset':'Add Liability';document.getElementById('nwName').value='';document.getElementById('nwVal').value='';document.getElementById('nwErr').textContent='';document.getElementById('addNWModal').classList.add('open');}
+async function saveNWItem(){const name=document.getElementById('nwName').value.trim(),val=parseFloat(document.getElementById('nwVal').value),err=document.getElementById('nwErr');if(!name){err.textContent='Enter a name.';return;}if(!val||val<0){err.textContent='Enter a valid amount.';return;}const item={id:'n'+Date.now(),name,val};if(nwMode==='asset')fin.assets.push(item);else fin.liabilities.push(item);document.getElementById('addNWModal').classList.remove('open');renderNetWorth();renderOverview();await saveFinance();}
+function renderNetWorth(){const tA=fin.assets.reduce((s,a)=>s+a.val,0),dL=fin.debts.reduce((s,d)=>s+d.remain,0),tL=fin.liabilities.reduce((s,l)=>s+l.val,0)+dL,net=tA-tL;document.getElementById('totalAssets').textContent=fmt(tA);document.getElementById('totalLiab').textContent=fmt(tL);const big=document.getElementById('bigNetWorth');big.textContent=fmt(net);big.style.color=net>=0?'white':'#ff9999';document.getElementById('nwSubtitle').textContent=net>=0?`${fmt(tA)} assets − ${fmt(tL)} liabilities`:`You owe more than you own — tracking is step one.`;document.getElementById('assetsList').innerHTML=fin.assets.length?fin.assets.map(a=>`<div class="nw-row"><span class="nw-name">${a.name}</span><span class="nw-val pos">${fmt(a.val)}</span><button class="nw-del" onclick="delNW('asset','${a.id}')">✕</button></div>`).join(''):'<div style="color:var(--ink-faint);font-size:13px;font-style:italic;padding:7px 0">No assets added yet.</div>';const mH=fin.liabilities.map(l=>`<div class="nw-row"><span class="nw-name">${l.name}</span><span class="nw-val neg">${fmt(l.val)}</span><button class="nw-del" onclick="delNW('liability','${l.id}')">✕</button></div>`).join('');const dH=fin.debts.map(d=>`<div class="nw-row"><span class="nw-name" style="color:var(--ink-faint)">${d.name} <em style="font-size:10px">(synced)</em></span><span class="nw-val neg">${fmt(d.remain)}</span></div>`).join('');document.getElementById('liabList').innerHTML=(mH+dH)||'<div style="color:var(--ink-faint);font-size:13px;font-style:italic;padding:7px 0">No liabilities added yet.</div>';}
+async function delNW(type,id){if(type==='asset')fin.assets=fin.assets.filter(a=>a.id!==id);else fin.liabilities=fin.liabilities.filter(l=>l.id!==id);renderNetWorth();renderOverview();await saveFinance();}
+function renderOverview(){renderDebtBanner();renderKPI();renderCatBreakdown();renderDailyTrend();renderDebtSnapshot();}
+function renderDebtBanner(){const banner=document.getElementById('debtBanner'),d=new Date(),tD=fin.debts.reduce((s,x)=>s+x.remain,0),tM=fin.debts.reduce((s,x)=>s+x.monthly,0);if(!fin.debts.length){banner.style.display='none';return;}banner.style.display='flex';banner.className='debt-banner';if(d.getDate()<=3){banner.innerHTML=`<div class="debt-banner-icon">📅</div><div><div class="debt-banner-title">Monthly Debt Reminder — ${d.toLocaleString('default',{month:'long',year:'numeric'})}</div><div class="debt-banner-amount">${fmt(tD)} remaining</div><div class="debt-banner-sub">${fmt(tM)} due this month · ${Math.ceil(tD/tM)} months to payoff</div></div><button class="debt-banner-btn" onclick="fTab('debts')">View →</button>`;}else{banner.innerHTML=`<div class="debt-banner-icon">💳</div><div><div class="debt-banner-title">Total Debt Outstanding</div><div class="debt-banner-amount">${fmt(tD)}</div><div class="debt-banner-sub">${fmt(tM)}/month · ${fin.debts.length} debt${fin.debts.length>1?'s':''}</div></div><button class="debt-banner-btn" onclick="fTab('debts')">Manage →</button>`;}}
+function renderKPI(){const now=new Date(),mon=now.getMonth(),yr=now.getFullYear(),mE=fin.expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===mon&&d.getFullYear()===yr;}).reduce((s,e)=>s+e.amt,0),tE=fin.expenses.filter(e=>e.date===todayISO()).reduce((s,e)=>s+e.amt,0),tA=fin.assets.reduce((s,a)=>s+a.val,0),dL=fin.debts.reduce((s,d)=>s+d.remain,0),tL=fin.liabilities.reduce((s,l)=>s+l.val,0)+dL,net=tA-tL;document.getElementById('kpiCards').innerHTML=`<div class="fin-card ${net>=0?'green':'red'}"><div class="fin-card-label">Net Worth</div><div class="fin-card-value ${net>=0?'positive':'negative'}">${fmt(net)}</div><div class="fin-card-sub">Assets − Liabilities</div></div><div class="fin-card blue"><div class="fin-card-label">This Month Spent</div><div class="fin-card-value neutral">${fmt(mE)}</div><div class="fin-card-sub">${now.toLocaleString('default',{month:'long'})}</div></div><div class="fin-card red"><div class="fin-card-label">Total Debt</div><div class="fin-card-value negative">${fmt(dL)}</div><div class="fin-card-sub">${fin.debts.length} debt${fin.debts.length!==1?'s':''}</div></div><div class="fin-card gold"><div class="fin-card-label">Today Spent</div><div class="fin-card-value" style="color:var(--accent)">${fmt(tE)}</div><div class="fin-card-sub">${fin.expenses.filter(e=>e.date===todayISO()).length} transactions</div></div>`;}
+function renderCatBreakdown(){const now=new Date(),cats={};fin.expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amt;});const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]),total=sorted.reduce((s,[,v])=>s+v,0),el=document.getElementById('catBreakdown');if(!sorted.length){el.innerHTML='<div style="color:var(--ink-faint);font-size:13px;font-style:italic;padding:12px 0">No expenses this month yet.</div>';return;}el.innerHTML=sorted.map(([cat,val])=>`<div class="cat-bar-row"><div class="cat-bar-label">${cat}</div><div class="cat-bar-track"><div class="cat-bar-fill" style="width:${val/total*100}%;background:${catColors[cat]||'#aaa'}"></div></div><div class="cat-bar-val">${fmt(val)}</div></div>`).join('');}
+function renderDailyTrend(){const days=[];for(let i=9;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}const byDay={};days.forEach(d=>byDay[d]=0);fin.expenses.forEach(e=>{if(byDay.hasOwnProperty(e.date))byDay[e.date]+=e.amt;});const vals=days.map(d=>byDay[d]),max=Math.max(...vals,1);document.getElementById('dailyTrend').innerHTML=`<div style="display:flex;align-items:flex-end;gap:3px;height:74px;">${days.map((d,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="width:100%;background:var(--finance);opacity:${vals[i]>0?.8:.2};border-radius:2px 2px 0 0;height:${Math.max(3,(vals[i]/max)*62)}px"></div><div style="font-size:9px;color:var(--ink-faint)">${d.slice(8)}</div></div>`).join('')}</div>`;}
+function renderDebtSnapshot(){const el=document.getElementById('debtSnapshot');if(!fin.debts.length){el.innerHTML='<div style="color:var(--ink-faint);font-size:13px;font-style:italic;">No debts tracked. <span style="color:var(--finance);cursor:pointer;font-weight:700;" onclick="fTab(\'debts\')">Add your first debt →</span></div>';return;}el.innerHTML=fin.debts.map(d=>{const pct=Math.round((1-d.remain/d.total)*100);return`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f0ede8;"><div style="flex:1"><div style="font-size:13px;font-weight:700">${d.name}</div><div style="font-size:10px;color:var(--ink-faint)">${fmt(d.monthly)}/mo · ${Math.ceil(d.remain/d.monthly)} months left</div></div><div style="text-align:right"><div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--rust)">${fmt(d.remain)}</div><div class="debt-progress" style="width:74px;margin-top:3px"><div class="debt-progress-fill ${pct>=50?'good':''}" style="width:${pct}%"></div></div></div></div>`;}).join('');}
+function fTab(t){['overview','expenses','debts','networth','insights'].forEach(x=>{document.getElementById('ftab-'+x).classList.toggle('active',x===t);document.getElementById('fview-'+x).style.display=x===t?'block':'none';});if(t==='expenses')renderExpList();if(t==='debts')renderDebts();if(t==='networth')renderNetWorth();if(t==='insights')renderAutoInsights();}
+function renderAutoInsights(){const el=document.getElementById('autoInsights'),insights=[],now=new Date(),mon=now.getMonth(),yr=now.getFullYear(),mE=fin.expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===mon&&d.getFullYear()===yr;}),total=mE.reduce((s,e)=>s+e.amt,0),cats={};mE.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amt;});const topCat=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];if(topCat)insights.push({icon:'📊',text:`Your biggest spending category this month is <strong>${topCat[0]}</strong> at <strong>${fmt(topCat[1])}</strong> — ${Math.round(topCat[1]/total*100)}% of total.`});const tA=fin.assets.reduce((s,a)=>s+a.val,0),tD=fin.debts.reduce((s,d)=>s+d.remain,0);if(tD>0&&tA>0){const r=tD/tA;insights.push({icon:r>0.5?'⚠️':'✅',text:r>0.5?`Debt-to-assets ratio is <strong>${Math.round(r*100)}%</strong>. Focus on reducing debt.`:`Healthy debt-to-assets ratio of <strong>${Math.round(r*100)}%</strong>. Keep building assets.`});}const lW=fin.expenses.filter(e=>(now-new Date(e.date))/86400000<=7),dA=lW.reduce((s,e)=>s+e.amt,0)/7;if(dA>0)insights.push({icon:'📅',text:`7-day average daily spend: <strong>${fmt(dA)}</strong>. Projected monthly: <strong>${fmt(dA*30)}</strong>.`});if(fin.debts.length){const f=fin.debts.slice().sort((a,b)=>a.remain-b.remain)[0];insights.push({icon:'🎯',text:`Quickest debt to eliminate: <strong>${f.name}</strong> — ${fmt(f.remain)} remaining (~${Math.ceil(f.remain/f.monthly)} months).`});}if(!insights.length){el.innerHTML='<div class="callout blue"><strong>Add expenses and debts</strong> to unlock automatic insights.</div>';return;}el.innerHTML=`<div class="fin-chart-card"><h3>Automatic Insights</h3>${insights.map(i=>`<div class="insight-item"><div class="insight-icon">${i.icon}</div><div class="insight-text">${i.text}</div></div>`).join('')}</div>`;}
+async function runFinAI(){const btn=document.getElementById('aiFinBtn'),res=document.getElementById('aiFinResult');btn.disabled=true;document.getElementById('aiFinTxt').innerHTML='<span class="spinner"></span> Analyzing…';const now=new Date(),mon=now.getMonth(),yr=now.getFullYear(),mE=fin.expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===mon&&d.getFullYear()===yr;}),cats={};mE.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amt;});const tA=fin.assets.reduce((s,a)=>s+a.val,0),tL=fin.liabilities.reduce((s,l)=>s+l.val,0)+fin.debts.reduce((s,d)=>s+d.remain,0),summary={netWorth:tA-tL,totalAssets:tA,totalLiabilities:tL,monthlySpend:mE.reduce((s,e)=>s+e.amt,0),spendByCategory:cats,debts:fin.debts.map(d=>({name:d.name,remaining:d.remain,monthly:d.monthly,interestRate:d.rate}))};try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:`You are a smart personal finance advisor. Analyze this data and give 3-4 specific, actionable insights. Be concrete and direct. Reference actual numbers. Use paragraph breaks.\n\n${JSON.stringify(summary,null,2)}\n\nCurrency is SAR. Focus on: spending habits, debt reduction, net worth growth, and 1-2 priority actions for this month.`}]})});const data=await r.json();res.innerHTML=(data.content?.map(c=>c.text||'').join('')||'Could not generate.').replace(/\n/g,'<br>');}catch(e){res.innerHTML='<em style="color:var(--rust)">Could not connect.</em>';}btn.disabled=false;document.getElementById('aiFinTxt').textContent='✦ Analyze Again';}
+
+// ══════════════════════════════════════════
+// YEAR PLAN
+// ══════════════════════════════════════════
+const dayPlans={0:{badge:'Workday',sub:'Sunday — a strong start sets the tone.',tip:'💡 A solid Sunday session means you start the week ahead.',blocks:[['6:30–7:00','rest','Wake up · no screens'],['7:00–7:45','gre','GRE (45 min)'],['9:00–6:00','work','Work'],['7:00–8:00','english','English practice'],['8:00+','rest','Rest']]},1:{badge:'Workday',sub:'Monday energy — channel it into a focused session.',tip:'💡 Do it before email, before anything.',blocks:[['6:30–7:00','rest','Wake up'],['7:00–7:45','gre','GRE (45 min)'],['9:00–6:00','work','Work'],['7:00–8:00','english','English: article or 150 words'],['8:00+','rest','Movie / book']]},2:{badge:'Workday',sub:'Tuesday — keep the chain unbroken.',tip:'💡 Two days in a row is already a streak.',blocks:[['6:30–7:00','rest','Wake up'],['7:00–7:45','gre','GRE (45 min)'],['9:00–6:00','work','Work'],['7:00–8:00','english','English'],['8:00+','rest','Rest']]},3:{badge:'Buffer Day',sub:'Wednesday — use it for a longer GRE session.',tip:'💡 A strong Wednesday carries you through Thursday.',blocks:[['Morning','rest','Slow start'],['Work hrs','work','Normal work'],['6:30–8:00','gre','GRE: full practice set'],['8:00–9:00','english','English: writing or speaking'],['9:00+','rest','Wind down']]},4:{badge:'Workday',sub:'Thursday — almost at the weekend.',tip:'💡 Hold the line.',blocks:[['6:30–7:00','rest','Wake up'],['7:00–7:45','gre','GRE (45 min)'],['9:00–6:00','work','Work'],['7:00–8:00','english','English'],['8:00+','rest','Rest']]},5:{badge:'Weekend',sub:'Friday — deep GRE session, then enjoy the evening.',tip:'💡 Get the session done in the morning.',blocks:[['9:00–11:30','gre','GRE deep: full section + review'],['1:00–2:30','work','Consulting reading'],['5:30–7:00','english','English: film + journal'],['Evening','rest','Social / fun']]},6:{badge:'Rest + Reset',sub:'Saturday: protect mornings, do a light session.',tip:'💡 A rested weekend is worth more.',blocks:[['10:00–12:00','gre','GRE: vocab + AWA'],['2:00–3:00','english','English: 1 practice section'],['3:00–5:00','work','Weekly planning'],['5:00+','rest','Rest completely']]}};
+const blockColors={gre:'#fde8c8',english:'#e8f0e8',work:'#e8eaf0',rest:'#fae8e8'};
+function buildToday(){const now=new Date(),dow=now.getDay(),plan=dayPlans[dow],days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('tdDay').textContent=days[dow];document.getElementById('tdDate').textContent=`${now.getDate()} ${mons[now.getMonth()]} ${now.getFullYear()}`;document.getElementById('tdBadge').textContent=plan.badge;document.getElementById('ySub').textContent=plan.sub;document.getElementById('todayTip').innerHTML=plan.tip;document.getElementById('tdBlocks').innerHTML=plan.blocks.map(([t,tp,tx])=>`<div style="display:flex;gap:8px;align-items:flex-start;"><div style="font-size:10px;color:rgba(255,255,255,.45);min-width:52px;padding-top:4px;">${t}</div><div style="padding:4px 10px;font-size:11px;border-radius:3px;background:${blockColors[tp]||'rgba(255,255,255,.1)'};color:var(--ink);flex:1">${tx}</div></div>`).join('');}
+function buildYPContent(){
+  const wdData=[{label:'Normal Day',type:'workday',typeLabel:'Mon · Tue · Thu',blocks:[['6:30–7:00','rest','Wake up · no screens · 5 min journal'],['7:00–7:45','gre','GRE session — Quant or Verbal (45 min)'],['9:00–6:00','work','Work — consulting tasks, client work'],['6:00–7:00','rest','Decompress — walk, eat, nothing'],['7:00–8:00','english','English: article, podcast, or 150 words'],['8:00+','rest','Movie / book / relaxing — guilt free']]},{label:'Heavy Day',type:'workday',typeLabel:'Survival Mode',blocks:[['7:00–7:30','gre','GRE flash: 20 vocab words or 5 quant problems'],['Day','work','Full consulting mode — don\'t feel guilty'],['Evening','english','English: just 20 min — 1 TED talk'],['Night','rest','Rest is productive. Sleep by 10:30.']]},{label:'Recharge Day',type:'light-day',typeLabel:'Wed · Buffer',blocks:[['Morning','rest','Slow start — no alarm if possible'],['Work hrs','work','Normal work'],['6:30–8:00','gre','Longer GRE: 1 full practice set + review'],['8:00–9:00','english','English: writing or speaking'],['9:00+','rest','Wind down']]}];
+  document.getElementById('weekdayCards').innerHTML=wdData.map(d=>`<div class="yp-day-card ${d.type}"><div class="yp-day-label">${d.label}</div><div class="yp-day-type">${d.typeLabel}</div>${d.blocks.map(([t,tp,tx])=>`<div class="time-block"><span class="time-label">${t}</span><div class="block-pill block-${tp}">${tx}</div></div>`).join('')}</div>`).join('');
+  const wkData=[{label:'Friday',type:'weekend-day',typeLabel:'Study + Life',blocks:[['8:30–9:00','rest','Slow morning — ease in'],['9:00–11:30','gre','GRE deep: 1 full section + review'],['11:30–1:00','rest','Break: lunch, walk'],['1:00–2:30','work','Consulting reading'],['5:30–7:00','english','English: film + journal'],['Evening','rest','Social / fun — this is sacred']]},{label:'Saturday',type:'weekend-day',typeLabel:'Rest + Reset',blocks:[['Whenever','rest','Wake up naturally. Protect mornings.'],['10:00–12:00','gre','GRE: vocab + AWA essay'],['2:00–3:00','english','English: 1 practice section'],['3:00–5:00','work','Weekly planning'],['5:00+','rest','Rest completely']]},{label:'Traveling',type:'flex-day',typeLabel:'When Away',blocks:[['Airport','gre','GRE vocab app'],['Hotel','english','1 English podcast episode'],['Flight','gre','Read GRE or English book'],['Always','rest','Give yourself grace']]}];
+  document.getElementById('weekendCards').innerHTML=wkData.map(d=>`<div class="yp-day-card ${d.type}"><div class="yp-day-label">${d.label}</div><div class="yp-day-type">${d.typeLabel}</div>${d.blocks.map(([t,tp,tx])=>`<div class="time-block"><span class="time-label">${t}</span><div class="block-pill block-${tp}">${tx}</div></div>`).join('')}</div>`).join('');
+  const phases=[{period:'Months 1–3',name:'Foundation',tags:[['gre','GRE Diagnostic'],['eng','English Baseline'],['wk','Build Habit']],desc:'Take a GRE diagnostic test in week 1. No pressure, just data. Build the daily study habit. Focus on making studying feel normal, not heroic. Study 45–60 min/day on workdays.'},{period:'Months 4–6',name:'Build',tags:[['gre','GRE Quant Focus'],['eng','Writing Skills'],['wk','Work Projects']],desc:'Increase to 1–1.5 hrs/day with full weekend sessions. Systematically cover GRE Quant and Verbal. For English: focus on writing and speaking. One full GRE practice test per month.'},{period:'Months 7–9',name:'Intensify',tags:[['gre','Full Mock Tests'],['eng','Speaking + Reading'],['wk','SOP Research']],desc:'One full GRE practice test every 2 weeks (timed, real conditions). Analyze every mistake. Start researching programs and building your SOP outline.'},{period:'Months 10–11',name:'Peak',tags:[['gre','GRE Exam'],['eng','English Exam'],['wk','Applications']],desc:'Take your GRE exam. If score is good, stop GRE prep. Take English test. Begin applications — SOP, recommendations, resume.'},{period:'Month 12',name:'Apply & Rest',tags:[['gre','Done ✓'],['eng','Done ✓'],['wk','Submit Apps']],desc:'Submit applications. Celebrate. Rest hard. You\'ve earned it. One year of consistent effort is genuinely remarkable.'}];
+  document.getElementById('phasesList').innerHTML=phases.map(p=>`<div class="phase"><div class="phase-meta"><div class="phase-period">${p.period}</div><div class="phase-name">${p.name}</div></div><div class="phase-body"><div class="phase-tags">${p.tags.map(([cl,l])=>`<span class="ptag ${cl}">${l}</span>`).join('')}</div><p class="phase-desc">${p.desc}</p></div></div>`).join('');
+  const rules=[{color:'gold',num:'1',title:'The 15-Minute Minimum',body:'On days you feel zero motivation, do exactly 15 minutes. Set a timer. Even if you don\'t keep going — 15 min is a chain that didn\'t break.'},{color:'sage',num:'2',title:'Never Miss Twice',body:'Missing one day is human. Missing two in a row is a pattern. The rule isn\'t "never miss" — it\'s "never miss twice."'},{color:'lavender',num:'3',title:'Swap, Don\'t Skip',body:'Hate Quant today? Do Verbal instead. Can\'t face flashcards? Watch a TED talk. Swapping is discipline. Skipping entirely is the enemy.'},{color:'rust',num:'4',title:'Protect Rest Ruthlessly',body:'Study creeping into movie time? Stop. Protecting rest isn\'t laziness — it\'s what makes tomorrow\'s session work.'},{color:'gold',num:'5',title:'Monthly Score Check-in',body:'Once a month, take a timed GRE section and record your score. Seeing even a 5-point improvement makes the grind feel worth it.'},{color:'sage',num:'6',title:'English Is Everywhere',body:'The movie you\'re watching counts. The podcast on your commute counts. Immersion IS the method — log it as a win.'},{color:'lavender',num:'7',title:'Work Prep Is Part of the Plan',body:'Studying for a client project? That counts. Your consulting skills and academic ambitions are not enemies.'},{color:'rust',num:'8',title:'Adjust Monthly, Not Daily',body:'Don\'t rewrite the plan after a bad week. Review once a month. Micro-adjustments are noise. Macro-adjustments are wisdom.'}];
+  document.getElementById('ruleCards').innerHTML=rules.map(r=>`<div class="yp-rule-card ${r.color}"><div class="yp-rule-num">${r.num}</div><div class="yp-rule-title">${r.title}</div><div class="yp-rule-body">${r.body}</div></div>`).join('');
+}
+function yTab(t){['today','weekday','weekend','phases','rules','checkin'].forEach(x=>{document.getElementById('ytab-'+x).classList.toggle('active',x===t);document.getElementById('yview-'+x).style.display=x===t?'block':'none';});if(t==='today')buildToday();}
+function ck(el){el.classList.toggle('checked');const box=el.querySelector('.check-box');box.style.background=el.classList.contains('checked')?'var(--sage)':'transparent';box.style.borderColor=el.classList.contains('checked')?'var(--sage)':'#aaa';box.style.color=el.classList.contains('checked')?'white':'transparent';updScore();}
+function updScore(){const items=document.querySelectorAll('#checklist .check-item');let chk=0;items.forEach(i=>{if(i.classList.contains('checked'))chk++;});const pct=Math.round(chk/items.length*100);const fill=document.getElementById('scoreBar');fill.style.width=pct+'%';fill.style.background=pct>=87?'var(--sage)':pct>=62?'var(--accent)':pct>=37?'var(--rust)':'#ccc';document.getElementById('scoreLabel').textContent=`${chk} of ${items.length} — ${pct}% this week`;const msg=document.getElementById('scoreMsg');msg.style.display='block';msg.style.padding='14px 18px';msg.style.borderRadius='8px';msg.style.fontSize='13px';msg.style.lineHeight='1.7';if(pct>=87){msg.innerHTML='🟢 <strong>Outstanding week.</strong> Sustained effort. Note what worked and repeat it.';msg.style.background='#e8f0e8';msg.style.borderLeft='4px solid var(--sage)';}else if(pct>=62){msg.innerHTML='🟡 <strong>Strong week.</strong> More than half your targets hit — genuinely impressive.';msg.style.background='#fef9e8';msg.style.borderLeft='4px solid var(--accent)';}else if(pct>=37){msg.innerHTML='🟠 <strong>OK week.</strong> Pick one thing to anchor next week and get back to it.';msg.style.background='#fef0e8';msg.style.borderLeft='4px solid var(--rust)';}else{msg.innerHTML='⚪ <strong>Hard week.</strong> The plan is still here. Even 15 minutes tomorrow.';msg.style.background='#f5f5f5';msg.style.borderLeft='4px solid #aaa';}}
+
+// ══════════════════════════════════════════
+// RESOURCES
+// ══════════════════════════════════════════
+function rTab(t){['gre','english','notes','practice','stack'].forEach(x=>{document.getElementById('rtab-'+x).classList.toggle('active',x===t);document.getElementById('rview-'+x).style.display=x===t?'block':'none';});}
+</script>
+</body>
+</html>
