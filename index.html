@@ -887,9 +887,13 @@ function initApp(){
   renderJournalSidebar();newEntry();buildToday();buildYPContent();renderOverview();
 }
 
-async function saveJournal(){await saveToCloud('journal',entries);}
-async function saveFinance(){await saveToCloud('finance',fin);}
-
+async function saveJournal(){
+  await saveToCloud('journal',entries);
+}
+async function saveFinance(){
+  await saveToCloud('finance',fin);
+}
+  
 function renderJournalSidebar(){const el=document.getElementById('entriesList');if(!entries.length){el.innerHTML='<div style="text-align:center;padding:20px 10px;color:var(--ink-faint);font-size:12px;font-style:italic">No entries yet ✦</div>';return;}el.innerHTML=[...entries].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="entry-item ${e.id===curId?'active':''}" onclick="openEntry('${e.id}')"><div class="entry-item-date">${fmtShort(e.date)} ${e.mood||''}</div><div class="entry-item-preview">${e.title||e.body||'No content…'}</div></div>`).join('');}
 function fmtDate(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
 function fmtShort(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
