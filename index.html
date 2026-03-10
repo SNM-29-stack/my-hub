@@ -668,7 +668,9 @@ async function doSignup(){
 
 async function doLogout(){
   await supabaseClient.auth.signOut();
-  currentUser=null;entries=[];fin={expenses:[],debts:[],assets:[],liabilities:[]};
+  currentUser=null;
+  entries=[];
+  fin={expenses:[],debts:[],assets:[],liabilities:[]};
   document.getElementById('app').style.display='none';
   document.getElementById('authScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
@@ -687,23 +689,46 @@ async function enterApp(){
 // ══════════════════════════════════════════
 // CLOUD STORAGE
 // ══════════════════════════════════════════
+// Table schema required in Supabase:
+//   journal: user_id (text, primary key), payload (jsonb)
+//   finance: user_id (text, primary key), payload (jsonb)
+// RLS: enable RLS, add policy: using (user_id = auth.uid()::text)
+
 async function saveToCloud(type, data){
-  if(!currentUser)return;
-  const {error}=await supabaseClient.from(type).upsert({id:currentUser.id,data:data});
-  if(error)console.error('Save error:',error);
+  if(!currentUser){ console.warn('saveToCloud: no user'); return; }
+  const {error} = await supabaseClient
+    .from(type)
+    .upsert({ user_id: currentUser.id, payload: data }, { onConflict: 'user_id' });
+  if(error) console.error('Save error ['+type+']:', error.message, error);
 }
 
 async function loadFromCloud(type){
-  if(!currentUser)return null;
-  const {data,error}=await supabaseClient.from(type).select('*').eq('id',currentUser.id).single();
-  if(error)return null;
-  return data?.data||null;
+  if(!currentUser){ console.warn('loadFromCloud: no user'); return null; }
+  const {data, error} = await supabaseClient
+    .from(type)
+    .select('payload')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if(error){ console.error('Load error ['+type+']:', error.message, error); return null; }
+  return data?.payload ?? null;
 }
 
 async function loadAllFromCloud(){
-  const [j,f]=await Promise.all([loadFromCloud('journal'),loadFromCloud('finance')]);
-  if(j)entries=j;
-  if(f)fin=f;
+  // Always reset to safe defaults first
+  entries = [];
+  fin = { expenses:[], debts:[], assets:[], liabilities:[] };
+  try {
+    const [j, f] = await Promise.all([loadFromCloud('journal'), loadFromCloud('finance')]);
+    if(Array.isArray(j)) entries = j;
+    if(f && typeof f === 'object'){
+      fin.expenses   = Array.isArray(f.expenses)    ? f.expenses    : [];
+      fin.debts      = Array.isArray(f.debts)       ? f.debts       : [];
+      fin.assets     = Array.isArray(f.assets)      ? f.assets      : [];
+      fin.liabilities= Array.isArray(f.liabilities) ? f.liabilities : [];
+    }
+  } catch(e){
+    console.error('loadAllFromCloud failed:', e);
+  }
 }
 
 // ══════════════════════════════════════════
